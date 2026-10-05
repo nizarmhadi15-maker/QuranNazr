@@ -15,7 +15,31 @@ jobs:
           set -e
           A=android; M=$A/app/src/main
           mkdir -p $M/java/com/nizar/qurannazr $M/assets $M/res/values $M/res/values-night $M/res/drawable $M/res/mipmap-anydpi-v26
-          cp index.html $M/assets/index.html
+          cp "$(ls quran-app*.html | head -1)" $M/assets/index.html
+          for e in quran-uthmani ar.muyassar quran-simple-clean; do
+            curl -fsSL --retry 5 --retry-delay 5 -o "$e.json" "https://api.alquran.cloud/v1/quran/$e"
+          done
+          curl -fsSL --retry 3 -o $M/assets/AmiriQuran.ttf "https://github.com/google/fonts/raw/main/ofl/amiriquran/AmiriQuran-Regular.ttf" || echo "font skipped"
+          python3 - "$M/assets/quran.json" <<'PY'
+          import json, re, sys
+          def load(e): return json.load(open(e + ".json", encoding="utf-8"))["data"]["surahs"]
+          U, T, C = load("quran-uthmani"), load("ar.muyassar"), load("quran-simple-clean")
+          D = re.compile("[\u064B-\u065F\u0670\u06D6-\u06ED\u0640\ufeff]")
+          nm = lambda s: re.sub("[\u0671\u0623\u0625\u0622]", "\u0627", D.sub("", s))
+          S, A = [], []
+          for su, st, sc in zip(U, T, C):
+              S.append({"number": su["number"], "name": su["name"], "revelationType": su["revelationType"], "numberOfAyahs": len(su["ayahs"])})
+              for x, y, z in zip(su["ayahs"], st["ayahs"], sc["ayahs"]):
+                  t, c = x["text"].lstrip("\ufeff"), z["text"].lstrip("\ufeff")
+                  if x["numberInSurah"] == 1 and su["number"] not in (1, 9):
+                      if nm(t).startswith("\u0628\u0633\u0645"): t = " ".join(t.split(" ")[4:])
+                      if nm(c).startswith("\u0628\u0633\u0645"): c = " ".join(c.split(" ")[4:])
+                  A.append([su["number"], x["numberInSurah"], x["page"], x["juz"], t, y["text"], c])
+          assert len(S) == 114 and len(A) == 6236, (len(S), len(A))
+          assert max(a[2] for a in A) == 604
+          json.dump({"s": S, "a": A}, open(sys.argv[1], "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+          print("Quran data OK:", len(A), "ayahs")
+          PY
           cat > $A/settings.gradle.kts <<'EOF'
           pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
           dependencyResolutionManagement { repositories { google(); mavenCentral() } }
@@ -33,8 +57,8 @@ jobs:
                   applicationId = "com.nizar.qurannazr"
                   minSdk = 26
                   targetSdk = 34
-                  versionCode = 1
-                  versionName = "1.0"
+                  versionCode = 2
+                  versionName = "2.0"
               }
               compileOptions {
                   sourceCompatibility = JavaVersion.VERSION_17
@@ -62,12 +86,15 @@ jobs:
           cat > $M/java/com/nizar/qurannazr/MainActivity.java <<'EOF'
           package com.nizar.qurannazr;
           import android.app.Activity;
+          import android.net.Uri;
           import android.os.Bundle;
+          import android.webkit.WebResourceRequest;
+          import android.webkit.WebResourceResponse;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
-          import java.io.ByteArrayOutputStream;
-          import java.io.InputStream;
+          import java.io.ByteArrayInputStream;
+          import java.util.HashMap;
           public class MainActivity extends Activity {
               private WebView web;
               @Override protected void onCreate(Bundle b) {
@@ -76,19 +103,26 @@ jobs:
                   WebSettings s = web.getSettings();
                   s.setJavaScriptEnabled(true);
                   s.setDomStorageEnabled(true);
-                  s.setDatabaseEnabled(true);
                   s.setTextZoom(100);
-                  web.setWebViewClient(new WebViewClient());
+                  web.setWebViewClient(new WebViewClient() {
+                      @Override public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) {
+                          Uri u = r.getUrl();
+                          if (!"qurannazr.local".equals(u.getHost())) return null;
+                          String p = u.getPath();
+                          if (p == null || p.equals("/")) p = "/index.html";
+                          String name = p.substring(1);
+                          String mime = name.endsWith(".html") ? "text/html" : name.endsWith(".json") ? "application/json"
+                                  : name.endsWith(".ttf") ? "font/ttf" : "application/octet-stream";
+                          try {
+                              return new WebResourceResponse(mime, "UTF-8", getAssets().open(name));
+                          } catch (Exception e) {
+                              return new WebResourceResponse("text/plain", "UTF-8", 404, "Not Found",
+                                      new HashMap<String, String>(), new ByteArrayInputStream(new byte[0]));
+                          }
+                      }
+                  });
                   setContentView(web);
-                  web.loadDataWithBaseURL("https://qurannazr.local/", readAsset("index.html"), "text/html", "UTF-8", null);
-              }
-              private String readAsset(String name) {
-                  try (InputStream in = getAssets().open(name)) {
-                      ByteArrayOutputStream out = new ByteArrayOutputStream();
-                      byte[] buf = new byte[8192]; int n;
-                      while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
-                      return out.toString("UTF-8");
-                  } catch (Exception e) { return "<h3 dir='rtl'>تعذّر تشغيل التطبيق</h3>"; }
+                  web.loadUrl("https://qurannazr.local/index.html");
               }
               @Override public void onBackPressed() {
                   if (web != null && web.canGoBack()) web.goBack(); else super.onBackPressed();
