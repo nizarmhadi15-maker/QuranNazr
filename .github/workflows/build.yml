@@ -1,0 +1,154 @@
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Android project
+        run: |
+          set -e
+          A=android; M=$A/app/src/main
+          mkdir -p $M/java/com/nizar/qurannazr $M/assets $M/res/values $M/res/values-night $M/res/drawable $M/res/mipmap-anydpi-v26
+          cp index.html $M/assets/index.html
+          cat > $A/settings.gradle.kts <<'EOF'
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement { repositories { google(); mavenCentral() } }
+          rootProject.name = "QuranNazr"
+          include(":app")
+          EOF
+          echo 'plugins { id("com.android.application") version "8.5.2" apply false }' > $A/build.gradle.kts
+          printf 'org.gradle.jvmargs=-Xmx2048m\nandroid.useAndroidX=true\n' > $A/gradle.properties
+          cat > $A/app/build.gradle.kts <<'EOF'
+          plugins { id("com.android.application") }
+          android {
+              namespace = "com.nizar.qurannazr"
+              compileSdk = 34
+              defaultConfig {
+                  applicationId = "com.nizar.qurannazr"
+                  minSdk = 26
+                  targetSdk = 34
+                  versionCode = 1
+                  versionName = "1.0"
+              }
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+          }
+          EOF
+          cat > $M/AndroidManifest.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <application android:allowBackup="true" android:icon="@mipmap/ic_launcher"
+                  android:roundIcon="@mipmap/ic_launcher" android:label="@string/app_name"
+                  android:supportsRtl="true" android:theme="@style/AppTheme">
+                  <activity android:name=".MainActivity" android:exported="true"
+                      android:configChanges="orientation|screenSize|screenLayout|keyboardHidden">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+          cat > $M/java/com/nizar/qurannazr/MainActivity.java <<'EOF'
+          package com.nizar.qurannazr;
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import java.io.ByteArrayOutputStream;
+          import java.io.InputStream;
+          public class MainActivity extends Activity {
+              private WebView web;
+              @Override protected void onCreate(Bundle b) {
+                  super.onCreate(b);
+                  web = new WebView(this);
+                  WebSettings s = web.getSettings();
+                  s.setJavaScriptEnabled(true);
+                  s.setDomStorageEnabled(true);
+                  s.setDatabaseEnabled(true);
+                  s.setTextZoom(100);
+                  web.setWebViewClient(new WebViewClient());
+                  setContentView(web);
+                  web.loadDataWithBaseURL("https://qurannazr.local/", readAsset("index.html"), "text/html", "UTF-8", null);
+              }
+              private String readAsset(String name) {
+                  try (InputStream in = getAssets().open(name)) {
+                      ByteArrayOutputStream out = new ByteArrayOutputStream();
+                      byte[] buf = new byte[8192]; int n;
+                      while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                      return out.toString("UTF-8");
+                  } catch (Exception e) { return "<h3 dir='rtl'>تعذّر تشغيل التطبيق</h3>"; }
+              }
+              @Override public void onBackPressed() {
+                  if (web != null && web.canGoBack()) web.goBack(); else super.onBackPressed();
+              }
+          }
+          EOF
+          echo '<resources><string name="app_name">القرآن الكريم نزر</string></resources>' > $M/res/values/strings.xml
+          echo '<resources><color name="icon_bg">#12302B</color><color name="bg_light">#EDF1EB</color><color name="bg_dark">#0D1715</color></resources>' > $M/res/values/colors.xml
+          cat > $M/res/values/themes.xml <<'EOF'
+          <resources>
+              <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
+                  <item name="android:statusBarColor">@color/bg_light</item>
+                  <item name="android:navigationBarColor">@color/bg_light</item>
+                  <item name="android:windowBackground">@color/bg_light</item>
+                  <item name="android:windowLightStatusBar">true</item>
+              </style>
+          </resources>
+          EOF
+          cat > $M/res/values-night/themes.xml <<'EOF'
+          <resources>
+              <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
+                  <item name="android:statusBarColor">@color/bg_dark</item>
+                  <item name="android:navigationBarColor">@color/bg_dark</item>
+                  <item name="android:windowBackground">@color/bg_dark</item>
+                  <item name="android:windowLightStatusBar">false</item>
+              </style>
+          </resources>
+          EOF
+          cat > $M/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/icon_bg" />
+              <foreground android:drawable="@drawable/ic_fg" />
+          </adaptive-icon>
+          EOF
+          cat > $M/res/drawable/ic_fg.xml <<'EOF'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+              <path android:fillColor="#D4AF5A" android:pathData="M53,42 C45,37 37,36 30,38 L30,72 C37,70 45,71 53,76 Z" />
+              <path android:fillColor="#D4AF5A" android:pathData="M55,42 C63,37 71,36 78,38 L78,72 C71,70 63,71 55,76 Z" />
+              <path android:fillColor="#12302B" android:pathData="M35,47 L48,49 L48,51 L35,49 Z M35,54 L48,56 L48,58 L35,56 Z M60,49 L73,47 L73,49 L60,51 Z M60,56 L73,54 L73,56 L60,58 Z" />
+              <path android:fillColor="#D4AF5A" android:pathData="M54,26 L56.5,31 L62,31.5 L58,35 L59.2,40.5 L54,37.6 L48.8,40.5 L50,35 L46,31.5 L51.5,31 Z" />
+          </vector>
+          EOF
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Build APK
+        working-directory: android
+        run: gradle assembleDebug
+      - run: cp android/app/build/outputs/apk/debug/app-debug.apk quran-nazr.apk
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: القرآن الكريم نزر
+          body: آخر نسخة من التطبيق
+          files: quran-nazr.apk
+          make_latest: true
