@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>القرآن الكريم نزر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#EDF1EB;--paper:#F8F9F4;--ink:#12302B;--muted:#62756E;--gold:#A87B22;--line:#D3DCD3;--accent:#1D5A4F;--hl:#F2E4BF;
+  --qfont:"Amiri Quran","Amiri","Traditional Arabic",serif;--ui:"Noto Kufi Arabic",Tahoma,sans-serif;--qsize:28px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D1715;--paper:#132220;--ink:#E4E2D4;--muted:#93A39D;--gold:#D4AF5A;--line:#24403B;--accent:#7FC3B3;--hl:#3A3420}}
+:root[data-theme="dark"]{--bg:#0D1715;--paper:#132220;--ink:#E4E2D4;--muted:#93A39D;--gold:#D4AF5A;--line:#24403B;--accent:#7FC3B3;--hl:#3A3420}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px}
+button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:8px;padding:10px 14px;max-width:760px;margin:auto}
+.bar h1{font-family:var(--qfont);font-weight:400;font-size:24px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:17px}
+.icon:active{background:var(--line)}
+nav{display:flex;max-width:760px;margin:auto}
+nav a{flex:1;text-align:center;padding:9px 0;color:var(--muted);text-decoration:none;font-weight:600;font-size:14px;border-bottom:2px solid transparent}
+nav a.on{color:var(--accent);border-color:var(--gold)}
+main{max-width:760px;margin:auto;padding:14px 14px 40px}
+.input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font:inherit;font-size:16px}
+.resume{display:block;width:100%;text-align:right;margin:0 0 14px;padding:14px;border-radius:12px;background:var(--accent);color:var(--paper)}
+.resume small{display:block;opacity:.8;font-size:12px}
+.list{list-style:none;margin:12px 0 0;padding:0}
+.row{display:flex;align-items:center;gap:12px;width:100%;text-align:right;padding:12px 4px;border-bottom:1px solid var(--line)}
+.num{width:36px;height:36px;flex:none;display:grid;place-items:center;font-size:13px;color:var(--gold);border:1.5px solid var(--gold);transform:rotate(45deg);border-radius:6px}
+.num span{transform:rotate(-45deg)}
+.row .name{font-family:var(--qfont);font-size:21px;line-height:1.6}
+.row .meta{font-size:12px;color:var(--muted)}
+.grow{flex:1;min-width:0}
+.frame{text-align:center;margin:6px 0 18px;padding:14px;border:2px solid var(--gold);border-radius:4px;outline:1px solid var(--gold);outline-offset:4px}
+.frame h2{font-family:var(--qfont);font-weight:400;font-size:30px;margin:0}
+.frame p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+.basmala{font-family:var(--qfont);font-size:calc(var(--qsize) * .95);text-align:center;margin:0 0 10px}
+.mushaf{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:18px 16px;font-family:var(--qfont);font-size:var(--qsize);line-height:2.25;text-align:justify}
+.ayah{cursor:pointer;border-radius:6px;transition:background .3s}
+.ayah.hl{background:var(--hl)}
+.mark{color:var(--gold);font-size:.85em;white-space:nowrap}
+.mark.fav{text-decoration:underline}
+.mushaf .frame{display:block;font-size:15px;line-height:1.4;margin:10px 0 12px}
+.mushaf .basmala{display:block;margin:0 0 4px;font-size:calc(var(--qsize) * .95)}
+.ayah.marked{background:var(--hl);box-shadow:inset 0 -2px 0 var(--gold)}
+.rib{font-size:.7em}
+.pagefoot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;color:var(--muted);font-size:13px}
+.markcard{display:block;width:100%;text-align:right;margin:0 0 14px;padding:14px;border-radius:12px;border:1.5px solid var(--gold);background:var(--paper)}
+.markcard small{display:block;color:var(--gold);font-size:12px}
+.goto{display:flex;gap:8px;margin:0 0 12px}
+.pager{display:flex;justify-content:space-between;gap:10px;margin-top:16px}
+.btn{padding:10px 16px;border:1px solid var(--line);border-radius:10px;background:var(--paper);font-weight:600}
+.btn.primary{background:var(--accent);color:var(--paper);border-color:var(--accent)}
+.res{display:block;width:100%;text-align:right;padding:12px 4px;border-bottom:1px solid var(--line)}
+.res .t{font-family:var(--qfont);font-size:20px;line-height:1.9}
+.res .s{font-size:12px;color:var(--gold)}
+.note{color:var(--muted);text-align:center;padding:30px 10px;line-height:1.9}
+.searchbox{display:flex;gap:8px}
+.backdrop{position:fixed;inset:0;background:rgb(0 0 0/.4);z-index:9;display:none}
+.sheet{position:fixed;inset:auto 0 0 0;z-index:10;background:var(--paper);border-radius:18px 18px 0 0;max-height:80%;overflow:auto;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .25s}
+.open .backdrop{display:block}.open .sheet{transform:none}
+.sheet .q{font-family:var(--qfont);font-size:24px;line-height:2}
+.sheet h3{font-size:14px;color:var(--gold);margin:14px 0 4px}
+.sheet .tf{line-height:1.9}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .2s;z-index:11;pointer-events:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <button class="icon" id="back" aria-label="رجوع" hidden>→</button>
+    <h1 id="title">القرآن الكريم نزر</h1>
+    <button class="icon" id="smaller" aria-label="تصغير الخط">ا-</button>
+    <button class="icon" id="bigger" aria-label="تكبير الخط">ا+</button>
+    <button class="icon" id="theme" aria-label="تبديل الوضع الليلي">◐</button>
+  </div>
+  <nav>
+    <a href="#list" data-v="list">السور</a>
+    <a href="#search" data-v="search">البحث</a>
+    <a href="#fav" data-v="fav">المفضلة</a>
+  </nav>
+</header>
+<main id="app"></main>
+<div id="sheetWrap"><div class="backdrop" id="backdrop"></div><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API='https://api.alquran.cloud/v1';
+const $=s=>document.querySelector(s);
+const app=$('#app');
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+             set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const ar=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm=s=>s.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g,'').replace(/[ٱأإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه');
+const BASMALA='بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
+let surahs=[],cur=null;
+
+function toast(m){const t=$('#toast');t.textContent=m;t.style.opacity=1;clearTimeout(t._h);t._h=setTimeout(()=>t.style.opacity=0,1800)}
+async function getJSON(url){const r=await fetch(url);const j=await r.json();if(j.code!==200)throw new Error('err');return j.data}
+
+/* الإعدادات */
+let size=store.get('size',28);
+const applySize=()=>document.documentElement.style.setProperty('--qsize',size+'px');applySize();
+$('#bigger').onclick=()=>{size=Math.min(44,size+2);store.set('size',size);applySize()};
+$('#smaller').onclick=()=>{size=Math.max(18,size-2);store.set('size',size);applySize()};
+const th=store.get('theme',null);if(th)document.documentElement.dataset.theme=th;
+$('#theme').onclick=()=>{const dark=matchMedia('(prefers-color-scheme: dark)').matches;
+  const now=document.documentElement.dataset.theme||(dark?'dark':'light');
+  const nx=now==='dark'?'light':'dark';document.documentElement.dataset.theme=nx;store.set('theme',nx)};
+$('#back').onclick=()=>location.hash='#list';
+
+/* البيانات */
+async function loadList(){
+  if(surahs.length)return;
+  surahs=store.get('surahs',[]);
+  if(!surahs.length){surahs=await getJSON(API+'/surah');store.set('surahs',surahs)}
+}
+async function loadPage(p){
+  let d=store.get('p'+p,null);
+  if(!d){
+    const [u,t]=await Promise.all([getJSON(`${API}/page/${p}/quran-uthmani`),getJSON(`${API}/page/${p}/ar.muyassar`)]);
+    d=u.ayahs.map((x,i)=>({s:x.surah.number,n:x.surah.name,a:x.numberInSurah,j:x.juz,t:x.text,f:t.ayahs[i].text}));
+    store.set('p'+p,d);
+  }
+  return d;
+}
+async function pageOf(s,a){
+  const map=store.get('ap',{});const k=s+':'+a;
+  if(!map[k]){const d=await getJSON(`${API}/ayah/${k}/quran-uthmani`);map[k]=d.page;store.set('ap',map)}
+  return map[k];
+}
+const favs=()=>store.get('favs',[]);
+const isFav=(s,a)=>favs().some(f=>f.s===s&&f.a===a);
+const mark=()=>store.get('mark',null);
+const isMark=(s,a)=>{const m=mark();return m&&m.s===s&&m.a===a};
+
+/* الواجهات */
+function setNav(v,title){
+  document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
+  $('#title').textContent=title||'القرآن الكريم نزر';$('#back').hidden=v!=='read';
+}
+function errorView(retry){app.innerHTML=`<p class="note">تعذّر التحميل. تأكد من اتصالك بالإنترنت ثم أعد المحاولة.<br><button class="btn primary" id="retry">إعادة المحاولة</button></p>`;$('#retry').onclick=retry}
+
+async function viewList(){
+  setNav('list');app.innerHTML='<p class="note">جارٍ تحميل السور…</p>';
+  try{await loadList()}catch(e){return errorView(viewList)}
+  const last=store.get('last',null),m=mark();
+  app.innerHTML=
+    (m?`<button class="markcard" id="markBtn"><small>🔖 علامة القراءة</small>${esc(m.n)} - الآية ${ar(m.a)} - صفحة ${ar(m.p)}</button>`:'')+
+    (last?`<button class="resume" id="resume"><small>آخر صفحة قرأتها</small>صفحة ${ar(last.p)} - ${esc(last.n||'')}</button>`:'')+
+    `<div class="goto"><input class="input" id="pg" type="number" inputmode="numeric" min="1" max="604" placeholder="اذهب إلى صفحة (١ - ٦٠٤)" aria-label="رقم الصفحة"><button class="btn primary" id="goPg">اذهب</button></div>
+    <input class="input" id="filter" placeholder="ابحث عن سورة بالاسم أو الرقم" aria-label="ابحث عن سورة"><ul class="list" id="ul"></ul>`;
+  if(m)$('#markBtn').onclick=()=>location.hash=`#p/${m.p}/${m.s}/${m.a}`;
+  if(last)$('#resume').onclick=()=>location.hash='#p/'+last.p;
+  const goPg=()=>{const n=+$('#pg').value;if(n>=1&&n<=604)location.hash='#p/'+n;else toast('اكتب رقماً من ١ إلى ٦٠٤')};
+  $('#goPg').onclick=goPg;$('#pg').onkeydown=e=>{if(e.key==='Enter')goPg()};
+  const draw=q=>{$('#ul').innerHTML=surahs.filter(s=>!q||norm(s.name).includes(norm(q))||String(s.number)===q).map(s=>
+    `<li><button class="row" data-n="${s.number}"><span class="num"><span>${ar(s.number)}</span></span><span class="grow"><div class="name">${esc(s.name)}</div><div class="meta">${s.revelationType==='Meccan'?'مكية':'مدنية'} - ${ar(s.numberOfAyahs)} آية</div></span></button></li>`).join('')
+    ||'<p class="note">لا توجد سورة بهذا الاسم.</p>'};
+  draw('');
+  $('#filter').oninput=e=>draw(e.target.value.trim());
+  $('#ul').onclick=e=>{const b=e.target.closest('.row');if(b)location.hash=`#a/${b.dataset.n}/1`};
+}
+
+async function goAyah(s,a){
+  app.innerHTML='<p class="note">جارٍ فتح الصفحة…</p>';
+  try{const p=await pageOf(s,a);location.replace(`#p/${p}/${s}/${a}`)}catch(e){errorView(()=>goAyah(s,a))}
+}
+
+async function viewPage(p,hs,ha){
+  app.innerHTML='<p class="note">جارٍ تحميل الصفحة…</p>';
+  let d;
+  try{d=await loadPage(p)}catch(e){return errorView(()=>viewPage(p,hs,ha))}
+  cur={p,d};setNav('read',d[0].n);
+  let body='';
+  d.forEach((x,i)=>{
+    let t=x.t;
+    if(x.a===1){
+      body+=`<span class="frame"><h2>${esc(x.n)}</h2></span>`;
+      if(x.s!==1&&x.s!==9){t=norm(t).startsWith('بسم')?t.split(' ').slice(4).join(' '):t;body+=`<span class="basmala">${BASMALA}</span>`}
+    }
+    body+=`<span class="ayah${isMark(x.s,x.a)?' marked':''}" id="a${x.s}_${x.a}" data-i="${i}">${esc(t)} <span class="mark${isFav(x.s,x.a)?' fav':''}">${isMark(x.s,x.a)?'<span class="rib">🔖</span>':''}﴿${ar(x.a)}﴾</span></span> `;
+  });
+  app.innerHTML=`<div class="mushaf" id="mushaf">${body}</div>
+    <div class="pagefoot"><span>الجزء ${ar(d[0].j)}</span><span>صفحة ${ar(p)}</span></div>
+    <div class="pager">${p<604?`<button class="btn primary" id="next">الصفحة التالية</button>`:'<span></span>'}
+    ${p>1?`<button class="btn" id="prev">الصفحة السابقة</button>`:''}</div>
+    <p class="note" style="padding:10px">اسحب يميناً للصفحة التالية ويساراً للسابقة. اضغط على أي آية للتفسير أو لوضع علامة.</p>`;
+  if(p<604)$('#next').onclick=()=>turn(1);
+  if(p>1)$('#prev').onclick=()=>turn(-1);
+  $('#mushaf').onclick=e=>{const el=e.target.closest('.ayah');if(el)openAyah(+el.dataset.i)};
+  store.set('last',{p,n:d[0].n});
+  if(hs){const el=$(`#a${hs}_${ha}`);if(el){el.scrollIntoView({block:'center'});el.classList.add('hl');setTimeout(()=>el.classList.remove('hl'),2500)}}
+  else scrollTo(0,0);
+}
+function turn(dir){if(!cur)return;const n=cur.p+dir;if(n<1||n>604)return;location.replace('#p/'+n)}
+
+/* السحب لتقليب الصفحات */
+let tx=0,ty=0;
+app.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
+app.addEventListener('touchend',e=>{
+  if(!location.hash.startsWith('#p/'))return;
+  const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.5)turn(dx>0?1:-1);
+},{passive:true});
+addEventListener('keydown',e=>{if(!location.hash.startsWith('#p/'))return;if(e.key==='ArrowLeft')turn(1);if(e.key==='ArrowRight')turn(-1)});
+
+function openAyah(i){
+  const x=cur.d[i],p=cur.p;
+  const sh=$('#sheet');
+  const draw=()=>{const fav=isFav(x.s,x.a),mk=isMark(x.s,x.a);
+    sh.innerHTML=`<div class="q">${esc(x.t)} <span class="mark">﴿${ar(x.a)}﴾</span></div>
+    <p class="meta" style="color:var(--muted);font-size:12px;margin:0">${esc(x.n)} - صفحة ${ar(p)}</p>
+    <h3>التفسير الميسّر</h3><div class="tf">${esc(x.f)}</div>
+    <div class="actions">
+      <button class="btn primary" id="mkBtn">${mk?'إزالة علامة القراءة':'🔖 ضع علامة القراءة هنا'}</button>
+      <button class="btn" id="favBtn">${fav?'إزالة من المفضلة':'حفظ في المفضلة'}</button>
+      <button class="btn" id="copyBtn">نسخ الآية</button><button class="btn" id="closeBtn">إغلاق</button></div>`;
+    $('#mkBtn').onclick=()=>{
+      if(mk){store.set('mark',null);toast('أُزيلت علامة القراءة')}
+      else{store.set('mark',{s:x.s,a:x.a,p,n:x.n});toast('وُضعت العلامة، ستجدها في صفحة السور')}
+      viewPage(p);closeSheet()};
+    $('#favBtn').onclick=()=>{let f=favs();
+      if(fav){f=f.filter(y=>!(y.s===x.s&&y.a===x.a));toast('أُزيلت من المفضلة')}
+      else{f.unshift({s:x.s,a:x.a,p,name:x.n,t:x.t.slice(0,120)});toast('حُفظت في المفضلة')}
+      store.set('favs',f);$(`#a${x.s}_${x.a} .mark`).classList.toggle('fav',!fav);draw()};
+    $('#copyBtn').onclick=async()=>{try{await navigator.clipboard.writeText(`${x.t} ﴿${ar(x.a)}﴾ [${x.n}]`);toast('نُسخت الآية')}catch(e){toast('تعذّر النسخ على هذا الجهاز')}};
+    $('#closeBtn').onclick=closeSheet;};
+  draw();$('#sheetWrap').classList.add('open');
+}
+function closeSheet(){$('#sheetWrap').classList.remove('open')}
+$('#backdrop').onclick=closeSheet;
+
+function viewSearch(){
+  setNav('search');
+  app.innerHTML=`<div class="searchbox"><input class="input" id="q" placeholder="اكتب كلمة من القرآن" aria-label="كلمة البحث"><button class="btn primary" id="go">ابحث</button></div><div id="out"><p class="note">اكتب كلمة واحدة أو أكثر بدون تشكيل، مثل: الصبر</p></div>`;
+  const run=async()=>{const q=norm($('#q').value.trim());if(!q)return;
+    $('#out').innerHTML='<p class="note">جارٍ البحث…</p>';
+    try{await loadList();
+      const d=await getJSON(`${API}/search/${encodeURIComponent(q)}/all/quran-simple-clean`);
+      $('#out').innerHTML=`<p class="note" style="padding:12px">${ar(d.count)} نتيجة</p>`+d.matches.slice(0,200).map(m=>
+        `<button class="res" data-s="${m.surah.number}" data-a="${m.numberInSurah}"><div class="s">${esc(surahs[m.surah.number-1].name)} - الآية ${ar(m.numberInSurah)}</div><div class="t">${esc(m.text)}</div></button>`).join('');
+    }catch(e){$('#out').innerHTML=navigator.onLine?'<p class="note">لا توجد نتائج لهذه الكلمة. جرّب كلمة أخرى بدون تشكيل.</p>':'<p class="note">البحث يحتاج اتصالاً بالإنترنت.</p>'}};
+  $('#go').onclick=run;$('#q').onkeydown=e=>{if(e.key==='Enter')run()};
+  $('#out').onclick=e=>{const b=e.target.closest('.res');if(b)location.hash=`#a/${b.dataset.s}/${b.dataset.a}`};
+}
+
+function viewFav(){
+  setNav('fav');const f=favs();
+  app.innerHTML=f.length?f.map(x=>`<button class="res" data-s="${x.s}" data-a="${x.a}" data-p="${x.p}"><div class="s">${esc(x.name)} - الآية ${ar(x.a)} - صفحة ${ar(x.p)}</div><div class="t">${esc(x.t)}</div></button>`).join('')
+    :'<p class="note">لا توجد آيات محفوظة بعد. اضغط على أي آية ثم اختر «حفظ في المفضلة».</p>';
+  app.onclick=e=>{const b=e.target.closest('.res');if(b&&location.hash==='#fav')location.hash=`#p/${b.dataset.p}/${b.dataset.s}/${b.dataset.a}`};
+}
+
+function route(){
+  closeSheet();app.onclick=null;
+  const h=location.hash.slice(1).split('/');
+  if(h[0]==='p')viewPage(Math.min(604,Math.max(1,+h[1]||1)),+h[2]||0,+h[3]||0);
+  else if(h[0]==='a')goAyah(+h[1],+h[2]||1);
+  else if(h[0]==='search')viewSearch();
+  else if(h[0]==='fav')viewFav();
+  else viewList();
+}
+addEventListener('hashchange',route);
+/* عند فتح التطبيق: يرجع تلقائياً لآخر صفحة قرأها */
+const last0=store.get('last',null);
+if(!location.hash&&last0)location.replace('#p/'+last0.p);else route();
+</script>
+</body>
+</html>
