@@ -70,17 +70,17 @@ jobs:
           rootProject.name = "QuranNazr"
           include(":app")
           EOF
-          echo 'plugins { id("com.android.application") version "8.5.2" apply false }' > $A/build.gradle.kts
-          printf 'org.gradle.jvmargs=-Xmx2048m\nandroid.useAndroidX=true\n' > $A/gradle.properties
+          echo 'plugins { id("com.android.application") version "8.11.1" apply false }' > $A/build.gradle.kts
+          printf 'org.gradle.jvmargs=-Xmx2048m\nandroid.useAndroidX=true\nandroid.suppressUnsupportedCompileSdk=36\n' > $A/gradle.properties
           cat > $A/app/build.gradle.kts <<'EOF'
           plugins { id("com.android.application") }
           android {
               namespace = "com.nizar.qurannazr"
-              compileSdk = 34
+              compileSdk = 36
               defaultConfig {
                   applicationId = "com.nizar.qurannazr"
                   minSdk = 26
-                  targetSdk = 34
+                  targetSdk = 36
                   // رقم الإصدار يرتفع تلقائياً مع كل بناء
                   versionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt() + 100
                   versionName = "1." + (System.getenv("GITHUB_RUN_NUMBER") ?: "0")
@@ -137,13 +137,17 @@ jobs:
           import android.content.Intent;
           import android.graphics.Color;
           import android.net.Uri;
+          import android.os.Build;
           import android.os.Bundle;
           import android.os.Handler;
           import android.os.Looper;
           import android.util.DisplayMetrics;
           import android.view.Gravity;
           import android.view.View;
+          import android.view.WindowInsets;
+          import android.view.WindowInsetsController;
           import android.view.WindowManager;
+          import android.window.OnBackInvokedDispatcher;
           import android.webkit.JavascriptInterface;
           import android.webkit.WebResourceRequest;
           import android.webkit.WebResourceResponse;
@@ -165,6 +169,7 @@ jobs:
               private static final String BANNER_ID = "__ADMOB_BANNER_ID__";
               private WebView web;
               private FrameLayout adBox;
+              private LinearLayout root;
               private AdView adView;
               private final Handler handler = new Handler(Looper.getMainLooper());
               public class Bridge {
@@ -190,7 +195,7 @@ jobs:
                       });
                   }
                   @JavascriptInterface public void setDark(final boolean dark) {
-                      runOnUiThread(() -> adBox.setBackgroundColor(dark ? Color.parseColor("#0D1715") : Color.parseColor("#EDF1EB")));
+                      runOnUiThread(() -> applyBars(dark));
                   }
               }
               @Override protected void onCreate(Bundle b) {
@@ -220,15 +225,31 @@ jobs:
                   });
 
                   // الصفحة في الأعلى، والإعلان شريط صغير تحتها (لا يغطي أي آية)
-                  LinearLayout root = new LinearLayout(this);
+                  root = new LinearLayout(this);
                   root.setOrientation(LinearLayout.VERTICAL);
+                  // Android 15+ يرسم التطبيق تحت شريط الحالة والتنقل: نبعد المحتوى عنهما
+                  root.setOnApplyWindowInsetsListener((v, insets) -> {
+                      if (Build.VERSION.SDK_INT >= 30) {
+                          android.graphics.Insets i = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                          v.setPadding(i.left, i.top, i.right, i.bottom);
+                      }
+                      return insets;
+                  });
                   root.addView(web, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
                   adBox = new FrameLayout(this);
                   adBox.setBackgroundColor(Color.parseColor("#EDF1EB"));
                   adBox.setVisibility(View.GONE);
                   root.addView(adBox, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
                   setContentView(root);
+                  int night = getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+                  applyBars(night == android.content.res.Configuration.UI_MODE_NIGHT_YES);
                   web.loadUrl("https://qurannazr.local/index.html");
+
+                  // زر الرجوع في Android 13+ (إلزامي في Android 16)
+                  if (Build.VERSION.SDK_INT >= 33) {
+                      getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                              OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::goBack);
+                  }
 
                   // إعلانات مناسبة لكل الأعمار فقط
                   MobileAds.setRequestConfiguration(new RequestConfiguration.Builder()
@@ -254,13 +275,26 @@ jobs:
                       loadAd();
                   } catch (Exception e) { adBox.setVisibility(View.GONE); }
               }
+              private void applyBars(boolean dark) {
+                  int bg = dark ? Color.parseColor("#0D1715") : Color.parseColor("#EDF1EB");
+                  root.setBackgroundColor(bg);
+                  adBox.setBackgroundColor(bg);
+                  if (Build.VERSION.SDK_INT >= 30) {
+                      WindowInsetsController c = getWindow().getInsetsController();
+                      if (c != null) {
+                          int light = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+                          c.setSystemBarsAppearance(dark ? 0 : light, light);
+                      }
+                  }
+              }
+              private void goBack() {
+                  if (web != null && web.canGoBack()) web.goBack(); else finish();
+              }
               private void loadAd() { if (adView != null) adView.loadAd(new AdRequest.Builder().build()); }
               @Override protected void onPause() { if (adView != null) adView.pause(); super.onPause(); }
               @Override protected void onResume() { super.onResume(); if (adView != null) adView.resume(); }
               @Override protected void onDestroy() { handler.removeCallbacksAndMessages(null); if (adView != null) adView.destroy(); super.onDestroy(); }
-              @Override public void onBackPressed() {
-                  if (web != null && web.canGoBack()) web.goBack(); else super.onBackPressed();
-              }
+              @Override public void onBackPressed() { goBack(); }   // Android 12 وما قبله
           }
           EOF
           sed -i "s|__ADMOB_APP_ID__|$ADMOB_APP_ID|" $M/AndroidManifest.xml
@@ -311,7 +345,7 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.7'
+          gradle-version: '8.13'
       - name: Build APK + AAB
         working-directory: android
         env:
