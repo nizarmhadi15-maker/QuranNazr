@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+env:
+  # ===== إعلانات AdMob: استبدل هذين السطرين بمعرّفاتك الحقيقية =====
+  ADMOB_APP_ID: ca-app-pub-3940256099942544~3347511713
+  ADMOB_BANNER_ID: ca-app-pub-3940256099942544/6300978111
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,10 +19,12 @@ jobs:
           set -e
           A=android; M=$A/app/src/main
           mkdir -p $M/java/com/nizar/qurannazr $M/assets $M/res/values $M/res/values-night $M/res/drawable $M/res/mipmap-anydpi-v26
-          cp "$(ls quran-app*.html | head -1)" $M/assets/index.html
+          F=$(for f in quran-app*.html; do v=$(grep -o 'nazr-version" content="[0-9]*' "$f" | grep -o '[0-9]*$' || true); echo "${v:-0} $f"; done | sort -n | tail -1 | cut -d' ' -f2-)
+          echo "Using: $F"; cp "$F" $M/assets/index.html
           for e in quran-uthmani ar.muyassar quran-simple-clean; do
             curl -fsSL --retry 5 --retry-delay 5 -o "$e.json" "https://api.alquran.cloud/v1/quran/$e"
           done
+          curl -fsSL --retry 5 --retry-delay 5 -o ar.jalalayn.json "https://api.alquran.cloud/v1/quran/ar.jalalayn" || echo "jalalayn skipped"
           curl -fsSL --retry 3 -o $M/assets/AmiriQuran.ttf "https://github.com/google/fonts/raw/main/ofl/amiriquran/AmiriQuran-Regular.ttf" || echo "font skipped"
           python3 - "$M/assets/quran.json" <<'PY'
           import json, re, sys
@@ -39,6 +45,15 @@ jobs:
           assert max(a[2] for a in A) == 604
           json.dump({"s": S, "a": A}, open(sys.argv[1], "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
           print("Quran data OK:", len(A), "ayahs")
+          import os
+          if os.path.exists("ar.jalalayn.json"):
+              try:
+                  J = [x["text"] for su in load("ar.jalalayn") for x in su["ayahs"]]
+                  assert len(J) == 6236
+                  json.dump(J, open(os.path.join(os.path.dirname(sys.argv[1]), "jalalayn.json"), "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+                  print("Jalalayn OK")
+              except Exception as e:
+                  print("Jalalayn skipped:", e)
           PY
           cat > $A/settings.gradle.kts <<'EOF'
           pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
@@ -57,22 +72,27 @@ jobs:
                   applicationId = "com.nizar.qurannazr"
                   minSdk = 26
                   targetSdk = 34
-                  versionCode = 2
-                  versionName = "2.0"
+                  versionCode = 4
+                  versionName = "4.0"
               }
               compileOptions {
                   sourceCompatibility = JavaVersion.VERSION_17
                   targetCompatibility = JavaVersion.VERSION_17
               }
           }
+          dependencies {
+              implementation("com.google.android.gms:play-services-ads:23.3.0")
+          }
           EOF
           cat > $M/AndroidManifest.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
               <application android:allowBackup="true" android:icon="@mipmap/ic_launcher"
                   android:roundIcon="@mipmap/ic_launcher" android:label="@string/app_name"
                   android:supportsRtl="true" android:theme="@style/AppTheme">
+                  <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="__ADMOB_APP_ID__" />
                   <activity android:name=".MainActivity" android:exported="true"
                       android:configChanges="orientation|screenSize|screenLayout|keyboardHidden">
                       <intent-filter>
@@ -86,17 +106,65 @@ jobs:
           cat > $M/java/com/nizar/qurannazr/MainActivity.java <<'EOF'
           package com.nizar.qurannazr;
           import android.app.Activity;
+          import android.content.Intent;
+          import android.graphics.Color;
           import android.net.Uri;
           import android.os.Bundle;
+          import android.os.Handler;
+          import android.os.Looper;
+          import android.util.DisplayMetrics;
+          import android.view.Gravity;
+          import android.view.View;
+          import android.view.WindowManager;
+          import android.webkit.JavascriptInterface;
           import android.webkit.WebResourceRequest;
           import android.webkit.WebResourceResponse;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
+          import android.widget.FrameLayout;
+          import android.widget.LinearLayout;
+          import com.google.android.gms.ads.AdListener;
+          import com.google.android.gms.ads.AdRequest;
+          import com.google.android.gms.ads.AdSize;
+          import com.google.android.gms.ads.AdView;
+          import com.google.android.gms.ads.LoadAdError;
+          import com.google.android.gms.ads.MobileAds;
+          import com.google.android.gms.ads.RequestConfiguration;
           import java.io.ByteArrayInputStream;
           import java.util.HashMap;
           public class MainActivity extends Activity {
+              private static final String BANNER_ID = "__ADMOB_BANNER_ID__";
               private WebView web;
+              private FrameLayout adBox;
+              private AdView adView;
+              private final Handler handler = new Handler(Looper.getMainLooper());
+              public class Bridge {
+                  @JavascriptInterface public void setBrightness(final float v) {
+                      runOnUiThread(() -> {
+                          WindowManager.LayoutParams lp = getWindow().getAttributes();
+                          lp.screenBrightness = v < 0 ? WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE : Math.max(0.02f, Math.min(1f, v));
+                          getWindow().setAttributes(lp);
+                      });
+                  }
+                  @JavascriptInterface public void keepOn(final boolean on) {
+                      runOnUiThread(() -> {
+                          if (on) getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                          else getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                      });
+                  }
+                  @JavascriptInterface public void share(final String text) {
+                      runOnUiThread(() -> {
+                          Intent i = new Intent(Intent.ACTION_SEND);
+                          i.setType("text/plain");
+                          i.putExtra(Intent.EXTRA_TEXT, text);
+                          startActivity(Intent.createChooser(i, "مشاركة"));
+                      });
+                  }
+                  @JavascriptInterface public void setDark(final boolean dark) {
+                      runOnUiThread(() -> adBox.setBackgroundColor(dark ? Color.parseColor("#0D1715") : Color.parseColor("#EDF1EB")));
+                  }
+              }
               @Override protected void onCreate(Bundle b) {
                   super.onCreate(b);
                   web = new WebView(this);
@@ -104,6 +172,7 @@ jobs:
                   s.setJavaScriptEnabled(true);
                   s.setDomStorageEnabled(true);
                   s.setTextZoom(100);
+                  web.addJavascriptInterface(new Bridge(), "NazrApp");
                   web.setWebViewClient(new WebViewClient() {
                       @Override public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) {
                           Uri u = r.getUrl();
@@ -121,14 +190,54 @@ jobs:
                           }
                       }
                   });
-                  setContentView(web);
+
+                  // الصفحة في الأعلى، والإعلان شريط صغير تحتها (لا يغطي أي آية)
+                  LinearLayout root = new LinearLayout(this);
+                  root.setOrientation(LinearLayout.VERTICAL);
+                  root.addView(web, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+                  adBox = new FrameLayout(this);
+                  adBox.setBackgroundColor(Color.parseColor("#EDF1EB"));
+                  adBox.setVisibility(View.GONE);
+                  root.addView(adBox, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                  setContentView(root);
                   web.loadUrl("https://qurannazr.local/index.html");
+
+                  // إعلانات مناسبة لكل الأعمار فقط
+                  MobileAds.setRequestConfiguration(new RequestConfiguration.Builder()
+                          .setMaxAdContentRating(RequestConfiguration.MAX_AD_CONTENT_RATING_G).build());
+                  new Thread(() -> MobileAds.initialize(this, st -> runOnUiThread(this::setupBanner))).start();
               }
+              private void setupBanner() {
+                  try {
+                      adView = new AdView(this);
+                      adView.setAdUnitId(BANNER_ID);
+                      DisplayMetrics dm = getResources().getDisplayMetrics();
+                      int widthDp = (int) (dm.widthPixels / dm.density);
+                      adView.setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, widthDp));
+                      adView.setAdListener(new AdListener() {
+                          @Override public void onAdLoaded() { adBox.setVisibility(View.VISIBLE); }
+                          @Override public void onAdFailedToLoad(LoadAdError e) {
+                              adBox.setVisibility(View.GONE);            // بدون إنترنت: يختفي الشريط
+                              handler.postDelayed(MainActivity.this::loadAd, 60000);  // يحاول مرة أخرى بعد دقيقة
+                          }
+                      });
+                      adBox.addView(adView, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,
+                              FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+                      loadAd();
+                  } catch (Exception e) { adBox.setVisibility(View.GONE); }
+              }
+              private void loadAd() { if (adView != null) adView.loadAd(new AdRequest.Builder().build()); }
+              @Override protected void onPause() { if (adView != null) adView.pause(); super.onPause(); }
+              @Override protected void onResume() { super.onResume(); if (adView != null) adView.resume(); }
+              @Override protected void onDestroy() { handler.removeCallbacksAndMessages(null); if (adView != null) adView.destroy(); super.onDestroy(); }
               @Override public void onBackPressed() {
                   if (web != null && web.canGoBack()) web.goBack(); else super.onBackPressed();
               }
           }
           EOF
+          sed -i "s|__ADMOB_APP_ID__|$ADMOB_APP_ID|" $M/AndroidManifest.xml
+          sed -i "s|__ADMOB_BANNER_ID__|$ADMOB_BANNER_ID|" $M/java/com/nizar/qurannazr/MainActivity.java
+          echo "AdMob app: $ADMOB_APP_ID / banner: $ADMOB_BANNER_ID"
           echo '<resources><string name="app_name">القرآن الكريم نزر</string></resources>' > $M/res/values/strings.xml
           echo '<resources><color name="icon_bg">#12302B</color><color name="bg_light">#EDF1EB</color><color name="bg_dark">#0D1715</color></resources>' > $M/res/values/colors.xml
           cat > $M/res/values/themes.xml <<'EOF'
