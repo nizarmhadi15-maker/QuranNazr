@@ -25,6 +25,7 @@ jobs:
             curl -fsSL --retry 5 --retry-delay 5 -o "$e.json" "https://api.alquran.cloud/v1/quran/$e"
           done
           curl -fsSL --retry 5 --retry-delay 5 -o ar.jalalayn.json "https://api.alquran.cloud/v1/quran/ar.jalalayn" || echo "jalalayn skipped"
+          curl -fsSL --retry 5 --retry-delay 5 -o en.sahih.json "https://api.alquran.cloud/v1/quran/en.sahih" || echo "english skipped"
           curl -fsSL --retry 3 -o $M/assets/AmiriQuran.ttf "https://github.com/google/fonts/raw/main/ofl/amiriquran/AmiriQuran-Regular.ttf" || echo "font skipped"
           python3 - "$M/assets/quran.json" <<'PY'
           import json, re, sys
@@ -34,7 +35,7 @@ jobs:
           nm = lambda s: re.sub("[\u0671\u0623\u0625\u0622]", "\u0627", D.sub("", s))
           S, A = [], []
           for su, st, sc in zip(U, T, C):
-              S.append({"number": su["number"], "name": su["name"], "revelationType": su["revelationType"], "numberOfAyahs": len(su["ayahs"])})
+              S.append({"number": su["number"], "name": su["name"], "en": su.get("englishName", ""), "revelationType": su["revelationType"], "numberOfAyahs": len(su["ayahs"])})
               for x, y, z in zip(su["ayahs"], st["ayahs"], sc["ayahs"]):
                   t, c = x["text"].lstrip("\ufeff"), z["text"].lstrip("\ufeff")
                   if x["numberInSurah"] == 1 and su["number"] not in (1, 9):
@@ -54,6 +55,14 @@ jobs:
                   print("Jalalayn OK")
               except Exception as e:
                   print("Jalalayn skipped:", e)
+          if os.path.exists("en.sahih.json"):
+              try:
+                  E = [x["text"].lstrip("\ufeff") for su in load("en.sahih") for x in su["ayahs"]]
+                  assert len(E) == 6236
+                  json.dump(E, open(os.path.join(os.path.dirname(sys.argv[1]), "en.json"), "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+                  print("English (Saheeh International) OK")
+              except Exception as e:
+                  print("English skipped:", e)
           PY
           cat > $A/settings.gradle.kts <<'EOF'
           pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
@@ -72,8 +81,8 @@ jobs:
                   applicationId = "com.nizar.qurannazr"
                   minSdk = 26
                   targetSdk = 34
-                  versionCode = 4
-                  versionName = "4.0"
+                  versionCode = 5
+                  versionName = "5.0"
               }
               compileOptions {
                   sourceCompatibility = JavaVersion.VERSION_17
