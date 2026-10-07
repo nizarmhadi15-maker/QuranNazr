@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="nazr-version" content="6">
+<title>القرآن الكريم نزر</title>
+<style>
+@font-face{font-family:"Amiri Quran";src:url("AmiriQuran.ttf")}
+:root{
+  --bg:#EDF1EB;--paper:#FBFAF3;--paper2:#ECE7D6;--ink:#12302B;--muted:#62756E;--gold:#A87B22;--line:#D3DCD3;--accent:#1D5A4F;--hl:#F2E4BF;
+  --dr:#10231F;--drink:#EDE8D8;--drline:#23403A;
+  --qfont:"Amiri Quran","Amiri","Traditional Arabic",serif;--efont:Georgia,"Noto Serif","Times New Roman",serif;--ui:system-ui,"Noto Sans Arabic",Tahoma,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D1715;--paper:#16231F;--paper2:#0F1A17;--ink:#E4E2D4;--muted:#93A39D;--gold:#D4AF5A;--line:#24403B;--accent:#7FC3B3;--hl:#3A3420;--dr:#0A1412;--drline:#1C322D}}
+:root[data-theme="dark"]{--bg:#0D1715;--paper:#16231F;--paper2:#0F1A17;--ink:#E4E2D4;--muted:#93A39D;--gold:#D4AF5A;--line:#24403B;--accent:#7FC3B3;--hl:#3A3420;--dr:#0A1412;--drline:#1C322D}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ===== القارئ ===== */
+.reader{position:fixed;inset:0;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+.rtop,.rbot{display:flex;align-items:center;gap:8px;padding:4px 10px;font-size:13px;color:var(--muted);flex:none}
+.rtop{justify-content:space-between}
+.rtop b{flex:1;text-align:center;font-family:var(--qfont);font-weight:400;font-size:20px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ibtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--accent)}
+.ibtn:active{background:var(--line)}
+.rjuz{min-width:40px;text-align:end}
+.rtop b.en{font-family:var(--ui);font-size:16px;font-weight:600}
+.vbtn{min-width:40px;height:30px;padding:0 9px;border-radius:15px;border:1.5px solid var(--gold);color:var(--accent);font-weight:700;font-size:13px;font-family:var(--ui)}
+.vbtn:active{background:var(--line)}
+.vbtn.ar{font-family:var(--qfont);font-size:17px;font-weight:400}
+.rbot{justify-content:space-between}
+.rbtn{padding:6px 12px;border-radius:8px;font-size:13px;color:var(--accent)}
+.rbtn:disabled{opacity:.3}
+.pnum{font-weight:600;color:var(--ink);font-size:15px}
+
+/* المسرح والأوراق */
+.stage{flex:1;min-height:0;position:relative;user-select:none;-webkit-user-select:none;margin:0 6px 0 4px;perspective:2200px;perspective-origin:50% 50%;touch-action:pan-y;overflow:hidden;direction:rtl}
+.leaf{position:absolute;inset:0 0 0 7px;transform-origin:right center;transform-style:preserve-3d;will-change:transform;contain:layout style}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.back{transform:rotateY(180deg);background:linear-gradient(to left,var(--paper2),var(--paper) 35%,var(--paper2));border:1px solid var(--line);border-radius:4px}
+.pagebox{position:absolute;inset:0;padding:8px 10px;background:var(--paper);
+  border:3px double var(--gold);border-radius:3px 6px 6px 3px;
+  box-shadow:inset 0 0 0 4px var(--paper),inset 0 0 0 5px var(--line),
+    -2px 0 0 0 var(--paper),-3px 0 0 0 var(--line),-5px 0 0 0 var(--paper),-6px 0 0 0 var(--line);
+  overflow:hidden;display:flex;flex-direction:column}
+.pagebox.tr{overflow-y:auto;overscroll-behavior:contain}
+.pagebox::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(to left,rgb(0 0 0/.13),rgb(0 0 0/0) 6%),linear-gradient(to right,rgb(0 0 0/.05),rgb(0 0 0/0) 3%)}
+.fshade,.ushade{position:absolute;inset:0;pointer-events:none;opacity:0;border-radius:4px;will-change:opacity}
+.fshade{background:linear-gradient(to left,rgb(0 0 0/.28),rgb(0 0 0/0) 45%,rgb(255 255 255/.10) 75%,rgb(0 0 0/.18))}
+.ushade{background:linear-gradient(to left,rgb(0 0 0/.38),rgb(0 0 0/.08) 40%,rgb(0 0 0/0) 70%)}
+
+.page{width:100%;margin:auto 0;font-family:var(--qfont);line-height:2.05;text-align:justify;text-align-last:center;color:var(--ink);position:relative}
+.page.en{font-family:var(--efont);line-height:1.6;direction:ltr;text-align:left;text-align-last:auto;hyphens:auto}
+.page.en .shead .c{font-family:var(--ui);font-size:15px;font-weight:600;padding:4px 0 5px}
+.page.en .shead .c small{display:block;font-family:var(--qfont);font-weight:400;font-size:15px;line-height:1.3}
+.page.en .basmala{font-family:var(--qfont);font-size:1.25em;line-height:1.8}
+.page.en .bsen{display:block;text-align:center;font-style:italic;margin:0 0 .4em;color:var(--muted)}
+.page.en .am{font-size:.62em;width:1.9em;height:1.9em;vertical-align:.1em}
+.page.short{text-align:center}
+.shead{display:flex;align-items:center;gap:6px;margin:4px 0 2px;padding:4px;line-height:1.2;
+  border:2px solid var(--gold);border-radius:3px;background:repeating-linear-gradient(45deg,#1d6b3b 0 5px,#2d8a50 5px 10px)}
+.shead .c{flex:1;background:var(--paper);border:2px solid var(--gold);border-radius:999px;text-align:center;
+  font-family:var(--qfont);font-size:21px;padding:3px 0 5px;color:var(--ink)}
+.shead .o{width:36px;height:36px;flex:none;border-radius:50%;background:var(--paper);border:2px solid var(--gold);
+  display:grid;place-items:center;font-family:var(--ui);font-size:9px;line-height:1.15;text-align:center;color:var(--ink)}
+.page .basmala{display:block;text-align:center;margin:0}
+.ayah{cursor:pointer;border-radius:6px;transition:background .3s}
+.ayah.hl{background:var(--hl)}
+.ayah.marked{background:var(--hl);box-shadow:inset 0 -2px 0 var(--gold)}
+.am{display:inline-grid;place-items:center;width:1.45em;height:1.45em;margin:0 .1em;vertical-align:middle;
+  border:1.5px solid var(--gold);border-radius:50%;font-family:var(--ui);font-size:.6em;line-height:1;color:var(--ink);
+  background:radial-gradient(circle,var(--paper) 55%,transparent 56%),conic-gradient(var(--gold) 0 25%,transparent 0 50%,var(--gold) 0 75%,transparent 0)}
+.am.fav{border-color:var(--accent);color:var(--accent)}
+
+/* ===== القائمة الجانبية ===== */
+.scrim{position:fixed;inset:0;background:rgb(0 0 0/.45);z-index:29;opacity:0;pointer-events:none;transition:opacity .25s}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;bottom:0;right:0;width:min(84vw,340px);z-index:30;background:var(--dr);color:var(--drink);
+  transform:translateX(100%);transition:transform .28s ease;display:flex;flex-direction:column;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:-8px 0 24px rgb(0 0 0/.3)}
+.drawer.open{transform:none}
+[dir=ltr] .drawer{right:auto;left:0;transform:translateX(-100%);box-shadow:8px 0 24px rgb(0 0 0/.3)}
+[dir=ltr] .drawer.open{transform:none}
+[dir=ltr] .dhead b{font-family:var(--ui);font-weight:600;font-size:20px}
+.dhead{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--drline)}
+.dhead b{font-family:var(--qfont);font-weight:400;font-size:24px;flex:1}
+.dhead small{display:block;font-size:12px;color:#B9B19A;font-family:var(--ui)}
+.dlist{flex:1;overflow:auto}
+.ditem{display:flex;align-items:center;gap:14px;width:100%;padding:14px 18px;border-bottom:1px solid var(--drline);font-size:17px;text-align:start}
+.ditem svg{color:#D4AF5A}
+.ditem:active{background:var(--drline)}
+.ditem .st{margin-inline-start:auto;font-size:12px;color:#B9B19A}
+.dsec{padding:12px 18px 4px;font-size:12px;color:#B9B19A}
+
+/* ===== اللوحات ===== */
+.panel{position:fixed;inset:0;z-index:31;background:var(--bg);display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .28s ease;padding-top:env(safe-area-inset-top,0px)}
+.panel.open{transform:none}
+.phead{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);flex:none}
+.phead h2{flex:1;margin:0;font-size:18px}
+.pbody{flex:1;overflow:auto;padding:12px 14px calc(30px + env(safe-area-inset-bottom,0px))}
+.input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font:inherit;font-size:16px}
+.row{display:flex;align-items:center;gap:12px;width:100%;text-align:start;padding:11px 4px;border-bottom:1px solid var(--line)}
+.num{width:34px;height:34px;flex:none;display:grid;place-items:center;font-size:13px;color:var(--gold);border:1.5px solid var(--gold);transform:rotate(45deg);border-radius:6px}
+.num span{transform:rotate(-45deg)}
+.row .name{font-family:var(--qfont);font-size:21px;line-height:1.5}
+.row .meta{font-size:12px;color:var(--muted)}
+.row .pg{font-size:13px;color:var(--muted)}
+.grow{flex:1;min-width:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+.cell{padding:10px 6px;border:1px solid var(--line);border-radius:10px;background:var(--paper);text-align:center;line-height:1.5}
+.cell b{display:block;font-size:15px}
+.cell span{font-size:12px;color:var(--muted)}
+.btn{padding:10px 16px;border:1px solid var(--line);border-radius:10px;background:var(--paper);font-weight:600}
+.btn.primary{background:var(--accent);color:var(--paper);border-color:var(--accent)}
+.res{display:block;width:100%;text-align:start;padding:12px 4px;border-bottom:1px solid var(--line)}
+.res .t{font-family:var(--qfont);font-size:20px;line-height:1.9}
+.res .s{font-size:12px;color:var(--gold)}
+.note{color:var(--muted);text-align:center;padding:24px 10px;line-height:1.9}
+.searchbox{display:flex;gap:8px}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tab{flex:1;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--paper);font-weight:600;color:var(--muted)}
+.tab.on{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+.tf-item{padding:10px 0 14px;border-bottom:1px solid var(--line)}
+.tf-item .q{font-family:var(--qfont);font-size:21px;line-height:1.9}
+.tf-item .tf{line-height:1.9;margin-top:4px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px;line-height:1.9}
+.card .q{font-family:var(--qfont);font-size:22px;line-height:2}
+.card small{display:block;color:var(--gold);font-size:12px}
+.en-t{font-family:var(--efont);direction:ltr;text-align:left;line-height:1.6}
+.card .en-t,.tf-item .en-t,.res .en-t{font-size:15px;margin-top:4px}
+.row .ename{font-weight:600}
+.mrow{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.mrow .res{border:0;flex:1}
+.del{width:36px;height:36px;border-radius:50%;color:var(--muted)}
+.del:active{background:var(--line)}
+input[type=range]{width:100%;accent-color:var(--accent);height:32px}
+.big{font-size:42px;text-align:center;font-weight:700;margin:6px 0 0}
+.bigsub{text-align:center;color:var(--muted);margin:0 0 14px;font-family:var(--qfont);font-size:20px}
+
+/* ===== ورقة الآية (كما هي) ===== */
+.sheet{position:fixed;inset:auto 0 0 0;z-index:30;background:var(--paper);border-radius:18px 18px 0 0;max-height:80%;overflow:auto;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .25s}
+.sheet.open{transform:none}
+.sheet .q{font-family:var(--qfont);font-size:24px;line-height:2}
+.sheet h3{font-size:14px;color:var(--gold);margin:14px 0 4px}
+.sheet .tf{line-height:1.9}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.toast{position:fixed;bottom:calc(60px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .2s;z-index:50;pointer-events:none;white-space:nowrap}
+.dim{position:fixed;inset:0;background:#000;pointer-events:none;z-index:60;opacity:0}
+@media (prefers-reduced-motion:reduce){.drawer,.panel,.sheet,.scrim{transition:none}}
+</style>
+</head>
+<body>
+<div class="reader" id="reader">
+  <div class="rtop">
+    <button class="ibtn" id="menuBtn" aria-label="القائمة الرئيسية"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <b id="rname"></b>
+    <button class="vbtn" id="viewBtn" hidden></button>
+    <span class="rjuz" id="rjuz"></span>
+  </div>
+  <div class="stage" id="stage"></div>
+  <div class="rbot">
+    <button class="rbtn" id="prev">السابقة</button>
+    <span class="pnum" id="pnum"></span>
+    <button class="rbtn" id="next">التالية</button>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="القائمة الرئيسية">
+  <div class="dhead"><b><span id="dTitle">القرآن الكريم نزر</span><small id="dSub">القائمة الرئيسية</small></b>
+    <button class="ibtn" id="dclose" aria-label="إغلاق" style="color:var(--drink)"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="dlist" id="dlist"></div>
+</aside>
+<section class="panel" id="panel" role="dialog" aria-modal="true"></section>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+<div class="toast" id="toast"></div>
+<div class="dim" id="dim"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+             set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const ar=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm=s=>s.replace(/[ً-ٰٟۖ-ۭـ]/g,'').replace(/[ٱأإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه');
+const sname=n=>n.replace(/^سُورَةُ\s*/,'');
+const BASMALA='بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
+const NA=window.NazrApp||null;   /* جسر أندرويد (السطوع، إبقاء الشاشة، المشاركة) */
+const APP_LINK='https://github.com/nizarmhadi15-maker/QuranNazr/releases/download/latest/quran-nazr.apk';
+const stage=$('#stage');
+let Q=null,cur=null,busy=false;
+
+function toast(m){const t=$('#toast');t.textContent=m;t.style.opacity=1;clearTimeout(t._h);t._h=setTimeout(()=>t.style.opacity=0,1800)}
+const I={
+  heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+  book:'<path d="M3 5.5C5.5 4.5 8.5 4.5 12 6c3.5-1.5 6.5-1.5 9-.5V19c-2.5-1-5.5-1-9 .5-3.5-1.5-6.5-1.5-9-.5z"/><path d="M12 6v13.5"/>',
+  list:'<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
+  pie:'<path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>',
+  pages:'<rect x="5" y="3" width="12" height="16" rx="1.5"/><path d="M8 7h6M8 10.5h6M8 14h4M19 7v13a1 1 0 0 1-1 1H8"/>',
+  search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+  bmAdd:'<path d="M6 3h12v18l-6-4.5L6 21z"/><path d="M12 7v6M9 10h6"/>',
+  bmGo:'<path d="M6 3h12v18l-6-4.5L6 21z"/><path d="M10 8l3 3-3 3"/>',
+  bms:'<path d="M5 6h11v15l-5.5-4L5 21z"/><path d="M9 3h10v14"/>',
+  star:'<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8L3.5 9.7l5.9-.8z"/>',
+  dua:'<path d="M7 21v-6.5L4.5 9a1.5 1.5 0 0 1 2.6-1.4L10 12V4.5a1.5 1.5 0 0 1 3 0V12"/><path d="M13 9.5a1.5 1.5 0 0 1 3 0v1a1.5 1.5 0 0 1 3 0V16a5 5 0 0 1-5 5h-3"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
+  moon:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+  bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
+  share:'<circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="M8.2 10.8l7.6-4M8.2 13.2l7.6 4"/>',
+  x:'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+const ic=n=>`<svg class="i" viewBox="0 0 24 24">${I[n]}</svg>`;
+
+/* ===== اللغة: واجهة عربية / English ===== */
+let LANG=store.get('lang',null)||((navigator.language||'ar').toLowerCase().startsWith('ar')?'ar':'en');
+let VIEW=store.get('view','mushaf');   /* mushaf = المصحف بالعربية، trans = ترجمة المعاني بالإنجليزية */
+const TX={
+ar:{appName:'القرآن الكريم نزر',mainMenu:'القائمة الرئيسية',prev:'السابقة',next:'التالية',juz:'الجزء',page:'صفحة',ayah:'الآية',close:'إغلاق',
+  fadl:'فضل قراءة القرآن',tafsir:'التفسير والترجمة',index:'الفهرس',juzs:'الأجزاء',pages:'الصفحات',search:'البحث',saveBm:'حفظ علامة',goBm:'انتقال إلى العلامة',
+  bms:'التحكم بالعلامات',dua:'دعاء الختم',bright:'سطوع الشاشة',night:'الوضع الليلي',keepOn:'إبقاء الشاشة مضاءة',share:'مشاركة التطبيق',lang:'اللغة',on:'مفعّل',off:'متوقف',
+  muyassar:'التفسير الميسّر',transl:'الترجمة الإنجليزية لمعاني الآية (صحيح إنترناشونال)',markSet:'🔖 ضع علامة القراءة هنا',markDel:'إزالة علامة القراءة',favAdd:'حفظ في المفضلة',favDel:'إزالة من المفضلة',copy:'نسخ الآية',
+  tMarkDel:'أُزيلت علامة القراءة',tMarkSet:'وُضعت العلامة',tFavDel:'أُزيلت من المفضلة',tFavAdd:'حُفظت في المفضلة',tCopied:'نُسخت الآية',tNoCopy:'تعذّر النسخ على هذا الجهاز',
+  fromQuran:'من القرآن الكريم',fromSunnah:'من السنة النبوية',prophetSaid:'قال رسول الله ﷺ:',
+  duaNote:'دعاء مأثور يُطبع في آخر كثير من المصاحف، وليس حديثًا نبويًّا.',
+  tafsirTitle:'التفسير - صفحة',tabM:'الميسّر',tabJ:'الجلالين',tabE:'English',
+  idxPh:'ابحث عن سورة بالاسم أو الرقم',meccan:'مكية',medinan:'مدنية',verses:'آية',pShort:'ص',noSurah:'لا توجد سورة بهذا الاسم.',
+  pagesPh:'أو اكتب رقم الصفحة',go:'اذهب',badPage:'اكتب رقماً من ١ إلى ٦٠٤',
+  searchPh:'اكتب كلمة من القرآن',searchHint:'اكتب كلمة عربية بدون تشكيل مثل: الصبر، أو كلمة إنجليزية من الترجمة مثل: patience',min2:'اكتب حرفين على الأقل',results:'نتيجة',noRes:'لا توجد نتائج. جرّب كلمة أخرى بدون تشكيل.',
+  marksSec:'العلامات',pageMark:'علامة صفحة',ayahMark:'علامة آية',noMarks:'لا توجد علامات. استخدم «حفظ علامة» من القائمة.',favSec:'المفضلة',noFav:'لا توجد آيات في المفضلة.',tMarkDeleted:'حُذفت العلامة',del:'حذف',marksTitle:'العلامات والمفضلة',
+  brightApp:'يتغيّر سطوع الشاشة داخل التطبيق فقط',brightWeb:'يمكن تخفيف الإضاءة فقط في المتصفح',auto:'تلقائي',brightAuto:'السطوع التلقائي للجهاز',tBrightAuto:'عاد السطوع التلقائي',
+  tKeepOn:'ستبقى الشاشة مضاءة أثناء القراءة',tKeepOff:'أُلغي إبقاء الشاشة مضاءة',tSavedAt:'حُفظت علامة عند صفحة ',tNoBm:'لا توجد علامة محفوظة بعد',tLinkCopied:'نُسخ رابط التطبيق',
+  shareTxt:'تطبيق القرآن الكريم نزر - مصحف كامل بدون إنترنت مع التفسير وترجمة المعاني بالإنجليزية',dataErr:'تعذّر فتح بيانات المصحف. أغلق التطبيق وافتحه من جديد.',
+  viewTr:'عرض ترجمة المعاني بالإنجليزية',viewMu:'عرض المصحف بالعربية',tTrans:'ترجمة معاني القرآن بالإنجليزية',tMushaf:'المصحف بالعربية',langName:'العربية'},
+en:{appName:'Quran Nazr',mainMenu:'Main menu',prev:'Previous',next:'Next',juz:'Juz',page:'Page',ayah:'Verse',close:'Close',
+  fadl:'Virtues of reading the Quran',tafsir:'Tafsir & translation',index:'Surah index',juzs:'Juz (parts)',pages:'Pages',search:'Search',saveBm:'Save bookmark',goBm:'Go to bookmark',
+  bms:'Manage bookmarks',dua:'Dua for completing the Quran',bright:'Screen brightness',night:'Night mode',keepOn:'Keep screen on',share:'Share the app',lang:'Language',on:'On',off:'Off',
+  muyassar:'Tafsir al-Muyassar (Arabic)',transl:'Translation of the meaning (Saheeh International)',markSet:'🔖 Bookmark this verse',markDel:'Remove bookmark',favAdd:'Add to favorites',favDel:'Remove from favorites',copy:'Copy verse',
+  tMarkDel:'Bookmark removed',tMarkSet:'Bookmark saved',tFavDel:'Removed from favorites',tFavAdd:'Added to favorites',tCopied:'Verse copied',tNoCopy:'Copying is not available on this device',
+  fromQuran:'From the Quran',fromSunnah:'From the Sunnah',prophetSaid:'The Messenger of Allah ﷺ said:',
+  duaNote:'A traditional supplication printed at the end of many copies of the Mushaf. It is not a hadith.',
+  tafsirTitle:'Tafsir - page',tabM:'Al-Muyassar',tabJ:'Al-Jalalayn',tabE:'English',
+  idxPh:'Search by surah name or number',meccan:'Meccan',medinan:'Medinan',verses:'verses',pShort:'p.',noSurah:'No surah matches that name.',
+  pagesPh:'Or type a page number',go:'Go',badPage:'Enter a number from 1 to 604',
+  searchPh:'Type an Arabic or English word',searchHint:'Search the Arabic text (e.g. الصبر) or the English translation (e.g. patience).',min2:'Type at least 2 letters',results:'results',noRes:'No results. Try another word.',
+  marksSec:'Bookmarks',pageMark:'Page bookmark',ayahMark:'Verse bookmark',noMarks:'No bookmarks yet. Use "Save bookmark" in the menu.',favSec:'Favorites',noFav:'No favorite verses yet.',tMarkDeleted:'Bookmark deleted',del:'Delete',marksTitle:'Bookmarks & favorites',
+  brightApp:'Brightness changes inside the app only',brightWeb:'In the browser the screen can only be dimmed',auto:'Auto',brightAuto:'Use device brightness',tBrightAuto:'Device brightness restored',
+  tKeepOn:'The screen will stay on while reading',tKeepOff:'Keep screen on is off',tSavedAt:'Bookmark saved at page ',tNoBm:'No bookmark saved yet',tLinkCopied:'App link copied',
+  shareTxt:'Quran Nazr - the complete Mushaf offline, with tafsir and an English translation of the meanings',dataErr:'Could not open the Quran data. Close the app and open it again.',
+  viewTr:'Show English translation',viewMu:'Show Arabic Mushaf',tTrans:'English translation of the meanings',tMushaf:'Arabic Mushaf',langName:'English'}};
+const T=k=>(TX[LANG]&&TX[LANG][k])||TX.ar[k]||k;
+const EN=()=>LANG==='en';
+const N=n=>EN()?String(n):ar(n);
+
+/* ===== البيانات (المصحف كاملاً داخل التطبيق) ===== */
+async function loadData(){
+  if(Q)return;
+  const r=await fetch('quran.json');Q=await r.json();
+  Q.byPage={};Q.idx={};Q.sp={};Q.juz={};
+  Q.a.forEach((x,i)=>{(Q.byPage[x[2]]||(Q.byPage[x[2]]=[])).push(i);Q.idx[x[0]+':'+x[1]]=i;
+    if(x[1]===1)Q.sp[x[0]]=x[2];if(!Q.juz[x[3]])Q.juz[x[3]]={p:x[2],s:x[0],a:x[1]}});
+  try{const e=await fetch('en.json');Q.en=e.ok?await e.json():null}catch(_){Q.en=null}
+  if(Q.en&&Q.en.length!==Q.a.length)Q.en=null;
+}
+const ayahAt=(s,a)=>Q.a[Q.idx[s+':'+a]];
+const pageOf=(s,a)=>ayahAt(s,a)[2];
+const enOf=i=>Q.en?Q.en[i]:'';
+const sEn=s=>(Q.s[s-1].en||('Surah '+s));
+const sTitle=s=>EN()?sEn(s):sname(Q.s[s-1].name);
+function pageData(p){return Q.byPage[p].map(i=>{const x=Q.a[i];return{i,s:x[0],n:Q.s[x[0]-1].name,a:x[1],j:x[3],t:x[4],f:x[5]}})}
+let JAL;async function loadJal(){if(JAL!==undefined)return JAL;try{const r=await fetch('jalalayn.json');JAL=r.ok?await r.json():null}catch(e){JAL=null}return JAL}
+const TRV=()=>VIEW==='trans'&&!!Q.en;
+
+/* العلامات والمفضلة */
+const bms=()=>store.get('bms',[]);
+const isMark=(s,a)=>bms().some(b=>b.k==='ayah'&&b.s===s&&b.a===a);
+const favs=()=>store.get('favs',[]);
+const isFav=(s,a)=>favs().some(f=>f.s===s&&f.a===a);
+(function migrate(){const m=store.get('mark',null);if(m){const b=bms();b.unshift({k:'ayah',p:m.p,s:m.s,a:m.a,n:m.n,t:Date.now()});store.set('bms',b);store.set('mark',null)}})();
+
+/* ===== بناء الورقة ===== */
+function makeLeaf(p){
+  const d=pageData(p),tr=TRV();let body='';
+  const MK=new Set(bms().filter(m=>m.k==='ayah').map(m=>m.s+':'+m.a)),FV=new Set(favs().map(f=>f.s+':'+f.a));
+  d.forEach((x,k)=>{
+    let t=x.t;const sa=x.s+':'+x.a;
+    if(x.a===1){
+      const n=Q.s[x.s-1].numberOfAyahs;
+      body+=tr
+        ?`<span class="shead"><span class="o">Surah<br>${x.s}</span><span class="c">${esc(sEn(x.s))}<small>سُورَةُ ${esc(sname(x.n))}</small></span><span class="o">Verses<br>${n}</span></span>`
+        :`<span class="shead"><span class="o">ترتيبها<br>${ar(x.s)}</span><span class="c">سُورَةُ ${esc(sname(x.n))}</span><span class="o">آياتها<br>${ar(n)}</span></span>`;
+      if(x.s!==1&&x.s!==9){
+        if(norm(t).startsWith('بسم'))t=t.split(' ').slice(4).join(' ');
+        body+=`<span class="basmala">${BASMALA}</span>`;
+        if(tr)body+=`<span class="bsen">${esc(enOf(Q.idx['1:1']))}</span>`;
+      }
+    }
+    body+=tr
+      ?`<span class="ayah${MK.has(sa)?' marked':''}" data-sa="${sa}" data-k="${k}">${esc(enOf(x.i))} <span class="am${FV.has(sa)?' fav':''}">${x.a}</span></span> `
+      :`<span class="ayah${MK.has(sa)?' marked':''}" data-sa="${sa}" data-k="${k}">${esc(t)}<span class="am${FV.has(sa)?' fav':''}">${ar(x.a)}</span></span> `;
+  });
+  const el=document.createElement('div');el.className='leaf';el.dataset.p=p;el._d=d;el._tr=tr;
+  el.innerHTML=`<div class="face front"><div class="pagebox${tr?' tr':''}"><div class="page${tr?' en':''}${p<=2&&!tr?' short':''}">${body}</div></div><div class="ushade"></div><div class="fshade"></div></div><div class="face back"></div>`;
+  return el;
+}
+/* أكبر خط تتسع له الصفحة بلا تمرير — مع حفظ الحجم لكل صفحة حتى لا يُعاد حسابه */
+let FS=store.get('fs',{dim:'',p:{}}),fsSave=0,lastFs={m:24,t:16};
+const fontsReady=()=>!document.fonts||document.fonts.status==='loaded';
+function fit(el){
+  const box=el.querySelector('.pagebox'),m=el.querySelector('.page'),p=+el.dataset.p,tr=el._tr,key=(tr?'t':'')+p,lk=tr?'t':'m';
+  const cs=getComputedStyle(box),H=box.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);
+  const dim=box.clientWidth+'x'+box.clientHeight;
+  if(FS.dim!==dim)FS={dim,p:{}};
+  if(FS.p[key]){m.style.fontSize=FS.p[key]+'px';lastFs[lk]=FS.p[key];return}
+  const max=tr?21:(p<=2?34:30),min=tr?13:10,ok=v=>{m.style.fontSize=v+'px';return m.offsetHeight<=H};
+  let lo=Math.max(min,lastFs[lk]*.82),hi=Math.min(max,lastFs[lk]*1.2);
+  if(!ok(lo)){hi=lo;lo=min}
+  else if(ok(hi)){lo=hi;hi=max}
+  for(let k=0;k<7&&hi-lo>.15;k++){const mid=(lo+hi)/2;if(ok(mid))lo=mid;else hi=mid}
+  lo=Math.floor(lo*10)/10;m.style.fontSize=lo+'px';lastFs[lk]=lo;   /* صفحة ترجمة طويلة جداً: تُمرَّر عمودياً داخل الإطار */
+  if(fontsReady()){FS.p[key]=lo;clearTimeout(fsSave);fsSave=setTimeout(()=>store.set('fs',FS),1500)}
+}
+function setCur(leaf){
+  const p=+leaf.dataset.p,d=leaf._d;cur={p,d,leaf};
+  const rn=$('#rname');rn.textContent=[...new Set(d.map(x=>sTitle(x.s)))].join(' - ');rn.classList.toggle('en',EN());
+  $('#rjuz').textContent=T('juz')+' '+N(d[0].j);
+  $('#pnum').textContent=N(p);
+  $('#prev').disabled=p<=1;$('#next').disabled=p>=604;
+  store.set('last',{p,n:d[0].n});
+  try{history.replaceState(history.state,'','#p/'+p)}catch(e){}
+}
+function highlight(s,a){if(!s||!cur)return;const el=cur.leaf.querySelector(`[data-sa="${s}:${a}"]`);if(el){el.classList.add('hl');el.scrollIntoView&&cur.leaf._tr&&el.scrollIntoView({block:'center'});setTimeout(()=>el.classList.remove('hl'),2500)}}
+
+/* ===== ذاكرة الصفحات المجاورة =====
+   الصفحة السابقة والتالية تُجهَّز مسبقاً في وقت الفراغ، فيبدأ التقليب فوراً بلا انتظار */
+const ANG=-180,pool={};let pfT=0;
+function getLeaf(p){if(!pool[p]){const l=makeLeaf(p);l.style.zIndex=0;stage.append(l);fit(l);pool[p]=l}return pool[p]}
+function placeIdle(){
+  for(const k in pool){const p=+k,l=pool[k];
+    l.style.transition='';l.style.zIndex=p===cur.p?2:p>cur.p?1:3;
+    l.style.transform=p<cur.p?`rotateY(${ANG/2}deg)`:'';
+    l.style.opacity=p<cur.p?'0':'';                                  /* السابقة مخفية حتى يبدأ الرجوع إليها */
+    l.querySelector('.fshade').style.opacity=0;l.querySelector('.ushade').style.opacity=0}
+}
+function prune(keepFar){for(const k in pool){if(+k!==keepFar&&Math.abs(+k-cur.p)>1){pool[k].remove();delete pool[k]}}}
+function prefetch(){
+  clearTimeout(pfT);
+  const step=()=>{if(!cur)return;if(busy||ps){pfT=setTimeout(step,150);return}
+    const need=[cur.p+1,cur.p-1].find(p=>p>=1&&p<=604&&!pool[p]);
+    if(need){getLeaf(need);placeIdle();pfT=setTimeout(step,60)}};
+  pfT=setTimeout(step,80);
+}
+function show(p){for(const k in pool){pool[k].remove();delete pool[k]}stage.innerHTML='';const l=getLeaf(p);setCur(l);placeIdle();prefetch()}
+function refreshPool(){if(!cur)return;for(const k in pool){if(+k!==cur.p){pool[k].remove();delete pool[k]}}prefetch()}
+
+/* ===== تقليب الصفحات مثل الكتاب (الكعب على اليمين) ===== */
+function startFlip(dir,target){
+  const n=target||cur.p+dir;if(n<1||n>604||n===cur.p)return null;
+  if(Math.abs(n-cur.p)>1)prune(n);
+  const nl=getLeaf(n);let f;
+  if(dir>0){for(const k in pool)if(+k>cur.p&&+k!==n)pool[k].style.zIndex=0;nl.style.zIndex=1;nl.style.transform='';f={dir,top:cur.leaf,under:nl,nl}}
+  else{nl.style.zIndex=3;nl.style.opacity='';f={dir,top:nl,under:cur.leaf,nl}}
+  cur.leaf.style.zIndex=2;setT(f,0);return f;
+}
+function setT(f,t){
+  const fold=(f.dir>0?t:1-t)*.5;  /* ٠ = الورقة مسطّحة، ٠٫٥ = قائمة على الكعب */
+  f.top.style.transform=`rotateY(${(fold*ANG).toFixed(2)}deg)`;
+  f.top.querySelector('.fshade').style.opacity=Math.min(1,fold*2.6).toFixed(3);
+  f.under.querySelector('.ushade').style.opacity=(Math.sin(fold*2*Math.PI)*.95).toFixed(3);
+}
+function endFlip(f,complete,dur,cb){
+  busy=true;
+  const els=[f.top,f.top.querySelector('.fshade'),f.under.querySelector('.ushade')];
+  els.forEach(e=>e.style.transition=`transform ${dur}ms cubic-bezier(.25,.7,.3,1),opacity ${dur}ms ease`);
+  requestAnimationFrame(()=>setT(f,complete?1:0));
+  setTimeout(()=>{
+    els.forEach(e=>e.style.transition='');
+    if(complete)setCur(f.nl);
+    prune();placeIdle();busy=false;prefetch();cb&&cb();
+  },dur+30);
+}
+function turn(dir){if(busy||!cur)return;const f=startFlip(dir);if(f)endFlip(f,true,420)}
+function goTo(p,s,a){
+  p=Math.min(604,Math.max(1,p));
+  if(!cur){show(p);highlight(s,a);return}
+  if(p===cur.p){highlight(s,a);return}
+  if(busy)return;
+  const f=startFlip(p>cur.p?1:-1,p);endFlip(f,true,560,()=>highlight(s,a));
+}
+
+/* السحب بالإصبع: الورقة تتبع الإصبع (تحديث واحد لكل إطار) */
+let ps=null,dragEnd=0,raf=0;
+stage.addEventListener('pointerdown',e=>{if(busy||!cur)return;ps={x:e.clientX,y:e.clientY,f:null,t:0,lx:e.clientX,lt:e.timeStamp,v:0}});
+stage.addEventListener('pointermove',e=>{
+  if(!ps)return;const dx=e.clientX-ps.x,dy=e.clientY-ps.y;
+  if(!ps.f){
+    if(Math.abs(dx)<10||Math.abs(dx)<Math.abs(dy)*1.2)return;
+    ps.dir=dx>0?1:-1;ps.f=startFlip(ps.dir);
+    if(!ps.f){ps=null;return}
+    try{stage.setPointerCapture(e.pointerId)}catch(_){}
+  }
+  const W=stage.clientWidth;ps.t=Math.max(0,Math.min(1,(dx*ps.dir)/(W*.85)));
+  const dt=e.timeStamp-ps.lt;if(dt>0){ps.v=(e.clientX-ps.lx)/dt*ps.dir;ps.lx=e.clientX;ps.lt=e.timeStamp}
+  if(!raf)raf=requestAnimationFrame(()=>{raf=0;if(ps&&ps.f)setT(ps.f,ps.t)});
+});
+function release(){
+  if(!ps)return;const s=ps;ps=null;if(raf){cancelAnimationFrame(raf);raf=0}if(!s.f)return;
+  dragEnd=Date.now();
+  const done=s.t>.28||s.v>.4;
+  endFlip(s.f,done,Math.round(done?(1-s.t)*380+120:s.t*340+100));
+}
+stage.addEventListener('pointerup',release);stage.addEventListener('pointercancel',release);
+stage.addEventListener('click',e=>{
+  if(Date.now()-dragEnd<350||busy)return;
+  const el=e.target.closest('.ayah');if(el&&cur.leaf.contains(el))openAyah(+el.dataset.k);
+});
+$('#next').onclick=()=>turn(1);$('#prev').onclick=()=>turn(-1);
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft')turn(1);if(e.key==='ArrowRight')turn(-1)});
+let rzT=0;addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(()=>{if(cur&&!busy){FS={dim:'',p:{}};fit(cur.leaf);refreshPool()}},150)});
+
+/* ===== زر EN: المصحف ⇄ ترجمة المعاني ===== */
+function drawViewBtn(){
+  const b=$('#viewBtn');b.hidden=!Q||!Q.en;if(b.hidden)return;
+  const tr=VIEW==='trans';b.textContent=tr?'ع':'EN';b.classList.toggle('ar',tr);
+  b.setAttribute('aria-label',tr?T('viewMu'):T('viewTr'));b.title=b.getAttribute('aria-label');
+}
+$('#viewBtn').onclick=()=>{if(busy)return;VIEW=VIEW==='trans'?'mushaf':'trans';store.set('view',VIEW);drawViewBtn();show(cur.p);toast(VIEW==='trans'?T('tTrans'):T('tMushaf'))};
+
+/* ===== النوافذ وزر الرجوع ===== */
+let ovOpen=false;
+function openOv(){if(!ovOpen){ovOpen=true;try{history.pushState({ov:1},'')}catch(e){}}}
+function closeAll(){$('#drawer').classList.remove('open');$('#panel').classList.remove('open');$('#sheet').classList.remove('open');$('#scrim').classList.remove('on');ovOpen=false}
+function closeOv(){if(ovOpen&&history.state&&history.state.ov)history.back();else closeAll()}
+addEventListener('popstate',()=>{if(ovOpen)closeAll()});
+$('#scrim').onclick=closeOv;$('#dclose').onclick=closeOv;
+function closeThen(fn){closeOv();setTimeout(fn,260)}
+
+/* ===== ورقة الآية (التفسير الميسّر كما هو + الترجمة) ===== */
+function openAyah(k){
+  const x=cur.d[k],p=cur.p,sh=$('#sheet');
+  const elA=()=>cur.leaf.querySelector(`[data-sa="${x.s}:${x.a}"]`);
+  const showEn=Q.en&&(EN()||TRV());
+  const draw=()=>{const fav=isFav(x.s,x.a),mk=isMark(x.s,x.a);
+    sh.innerHTML=`<div class="q" dir="rtl">${esc(x.t)} <span style="color:var(--gold)">﴿${ar(x.a)}﴾</span></div>
+    <p style="color:var(--muted);font-size:12px;margin:0">${esc(sTitle(x.s))} - ${T('ayah')} ${N(x.a)} - ${T('page')} ${N(p)}</p>
+    ${showEn?`<h3>${T('transl')}</h3><div class="en-t">${esc(enOf(x.i))}</div>`:''}
+    <h3>${T('muyassar')}</h3><div class="tf" dir="rtl">${esc(x.f)}</div>
+    <div class="actions">
+      <button class="btn primary" id="mkBtn">${mk?T('markDel'):T('markSet')}</button>
+      <button class="btn" id="favBtn">${fav?T('favDel'):T('favAdd')}</button>
+      <button class="btn" id="copyBtn">${T('copy')}</button><button class="btn" id="closeBtn">${T('close')}</button></div>`;
+    $('#mkBtn').onclick=()=>{let b=bms();
+      if(mk){b=b.filter(y=>!(y.k==='ayah'&&y.s===x.s&&y.a===x.a));toast(T('tMarkDel'))}
+      else{b.unshift({k:'ayah',p,s:x.s,a:x.a,n:x.n,t:Date.now()});toast(T('tMarkSet'))}
+      store.set('bms',b);const e=elA();if(e)e.classList.toggle('marked',!mk);draw()};
+    $('#favBtn').onclick=()=>{let f=favs();
+      if(fav){f=f.filter(y=>!(y.s===x.s&&y.a===x.a));toast(T('tFavDel'))}
+      else{f.unshift({s:x.s,a:x.a,p,name:x.n,t:x.t.slice(0,120)});toast(T('tFavAdd'))}
+      store.set('favs',f);const e=elA();if(e)e.querySelector('.am').classList.toggle('fav',!fav);draw()};
+    $('#copyBtn').onclick=async()=>{const txt=`${x.t} ﴿${ar(x.a)}﴾ [${x.n}]`+(showEn?`\n\n${enOf(x.i)} (${sEn(x.s)} ${x.s}:${x.a})`:'');
+      try{await navigator.clipboard.writeText(txt);toast(T('tCopied'))}catch(e){toast(T('tNoCopy'))}};
+    $('#closeBtn').onclick=closeOv;};
+  draw();openOv();$('#scrim').classList.add('on');sh.classList.add('open');
+}
+
+/* ===== اللوحات ===== */
+function panel(title,html,mount){
+  const p=$('#panel');
+  p.innerHTML=`<div class="phead"><button class="ibtn" id="pclose" aria-label="${T('close')}">${ic('x')}</button><h2>${title}</h2></div><div class="pbody" id="pbody">${html}</div>`;
+  $('#drawer').classList.remove('open');$('#scrim').classList.remove('on');
+  openOv();p.classList.add('open');$('#pclose').onclick=closeOv;
+  if(mount)mount($('#pbody'));
+}
+const goFromPanel=(p,s,a)=>closeThen(()=>goTo(p,s,a));
+const qcard=(s,a)=>{const i=Q.idx[s+':'+a],x=Q.a[i];return`<div class="card"><div class="q" dir="rtl">${esc(x[4])} <span style="color:var(--gold)">﴿${ar(a)}﴾</span></div>${EN()&&Q.en?`<div class="en-t">${esc(enOf(i))}</div>`:''}<small>${esc(sTitle(s))} - ${T('ayah')} ${N(a)}</small></div>`};
+
+function pFadl(){
+  const H=[
+    ['خيرُكم من تعلَّم القرآنَ وعلَّمه','رواه البخاري','The best of you are those who learn the Quran and teach it.','Al-Bukhari'],
+    ['اقرؤوا القرآنَ فإنه يأتي يومَ القيامةِ شفيعًا لأصحابه','رواه مسلم','Read the Quran, for it will come on the Day of Resurrection as an intercessor for its companions.','Muslim'],
+    ['الماهرُ بالقرآن مع السَّفَرةِ الكرامِ البَرَرة، والذي يقرأ القرآنَ ويتتعتعُ فيه وهو عليه شاقٌّ له أجران','متفق عليه','The one who is skilled in the Quran will be with the noble and righteous scribes, and the one who reads the Quran and stumbles over it, finding it difficult, will have a double reward.','Al-Bukhari and Muslim'],
+    ['من قرأ حرفًا من كتاب الله فله به حسنة، والحسنةُ بعشرِ أمثالها، لا أقول «الم» حرف، ولكن ألفٌ حرف، ولامٌ حرف، وميمٌ حرف','رواه الترمذي','Whoever reads a letter from the Book of Allah will have a good deed, and a good deed is multiplied by ten. I do not say that Alif-Lam-Mim is one letter; rather Alif is a letter, Lam is a letter and Mim is a letter.','At-Tirmidhi'],
+    ['يُقال لصاحب القرآن: اقرأ وارتقِ ورتِّل كما كنت ترتِّل في الدنيا، فإنَّ منزلتك عند آخر آيةٍ تقرؤها','رواه أبو داود والترمذي','It will be said to the companion of the Quran: Read, ascend and recite as you used to recite in the world, for your rank will be at the last verse you recite.','Abu Dawud and At-Tirmidhi']];
+  panel(T('fadl'),
+    `<p class="dsec" style="color:var(--gold);padding:0 0 6px">${T('fromQuran')}</p>${[[35,29],[35,30],[17,9],[38,29]].map(r=>qcard(...r)).join('')}
+     <p class="dsec" style="color:var(--gold);padding:10px 0 6px">${T('fromSunnah')}</p>${H.map(h=>EN()
+       ?`<div class="card">${T('prophetSaid')} "${h[2]}"<div dir="rtl" style="font-size:14px;color:var(--muted);margin-top:6px">«${h[0]}»</div><small>${h[3]}</small></div>`
+       :`<div class="card">${T('prophetSaid')} «${h[0]}»<small>${h[1]}</small></div>`).join('')}`);
+}
+function pDua(){
+  const arD='اللهمَّ ارحمني بالقرآن، واجعله لي إمامًا ونورًا وهدًى ورحمة. اللهمَّ ذكِّرني منه ما نسيت، وعلِّمني منه ما جهلت، وارزقني تلاوته آناءَ الليل وأطرافَ النهار، واجعله لي حجَّةً يا ربَّ العالمين.';
+  const enD='O Allah, have mercy on me through the Quran, and make it for me a guide, a light, guidance and mercy. O Allah, remind me of what I have forgotten of it, teach me what I do not know of it, grant me its recitation through the hours of the night and the ends of the day, and make it a proof for me, O Lord of the worlds.';
+  panel(T('dua'),
+    `${[[3,8],[3,193],[3,194],[14,41]].map(r=>qcard(...r)).join('')}
+     <div class="card"><div dir="rtl" style="font-size:17px">${arD}</div>${EN()?`<div class="en-t">${enD}</div>`:''}<small>${T('duaNote')}</small></div>`);
+}
+async function pTafsir(){
+  const d=cur.d,jal=await loadJal();let which=EN()&&Q.en?'e':'m';
+  const tabs=[['m',T('tabM')]];if(jal)tabs.push(['j',T('tabJ')]);if(Q.en)tabs.push(['e',T('tabE')]);
+  panel(`${T('tafsirTitle')} ${N(cur.p)}`,
+    `${tabs.length>1?`<div class="tabs">${tabs.map(t=>`<button class="tab${t[0]===which?' on':''}" data-w="${t[0]}">${t[1]}</button>`).join('')}</div>`:''}<div id="tfl"></div>`,
+    b=>{const draw=()=>{b.querySelector('#tfl').innerHTML=d.map(x=>`<div class="tf-item"><div class="q" dir="rtl">${esc(x.t)} <span style="color:var(--gold)">﴿${ar(x.a)}﴾</span></div>${which==='e'?`<div class="en-t"><b>${x.a}.</b> ${esc(enOf(x.i))}</div>`:`<div class="tf" dir="rtl">${esc(which==='j'?jal[x.i]:x.f)}</div>`}</div>`).join('')};
+      draw();b.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{which=t.dataset.w;b.querySelectorAll('.tab').forEach(u=>u.classList.toggle('on',u===t));draw()})});
+}
+function pIndex(){
+  panel(T('index'),`<input class="input" id="flt" placeholder="${T('idxPh')}"><div id="ul"></div>`,b=>{
+    const draw=q=>{const nq=norm(q),lq=q.toLowerCase().replace(/[^a-z0-9]/g,'');
+      b.querySelector('#ul').innerHTML=Q.s.filter(s=>!q||norm(s.name).includes(nq)||String(s.number)===q||(lq&&(s.en||'').toLowerCase().replace(/[^a-z0-9]/g,'').includes(lq))).map(s=>
+      `<button class="row" data-s="${s.number}"><span class="num"><span>${N(s.number)}</span></span><span class="grow">${EN()&&s.en?`<div class="ename">${esc(s.en)}</div>`:''}<div class="name">${esc(s.name)}</div><div class="meta">${s.revelationType==='Meccan'?T('meccan'):T('medinan')} - ${N(s.numberOfAyahs)} ${T('verses')}</div></span><span class="pg">${T('pShort')} ${N(Q.sp[s.number])}</span></button>`).join('')||`<p class="note">${T('noSurah')}</p>`};
+    draw('');b.querySelector('#flt').oninput=e=>draw(e.target.value.trim());
+    b.querySelector('#ul').onclick=e=>{const r=e.target.closest('.row');if(r)goFromPanel(Q.sp[+r.dataset.s])}});
+}
+function pJuz(){
+  let h='';for(let j=1;j<=30;j++){const z=Q.juz[j];h+=`<button class="cell" data-p="${z.p}"><b>${T('juz')} ${N(j)}</b><span>${esc(sTitle(z.s))} ${N(z.a)}<br>${T('page')} ${N(z.p)}</span></button>`}
+  panel(T('juzs'),`<div class="grid">${h}</div>`,b=>b.onclick=e=>{const c=e.target.closest('.cell');if(c)goFromPanel(+c.dataset.p)});
+}
+function pPages(){
+  panel(T('pages'),`<p class="big" id="pv"></p><p class="bigsub" id="ps"></p>
+    <input type="range" min="1" max="604" id="pr" aria-label="${T('page')}" dir="rtl">
+    <div class="searchbox" style="margin-top:14px"><input class="input" id="pi" type="number" inputmode="numeric" min="1" max="604" placeholder="${T('pagesPh')}"><button class="btn primary" id="pg">${T('go')}</button></div>`,b=>{
+    const r=b.querySelector('#pr'),upd=v=>{b.querySelector('#pv').textContent=N(v);const x=Q.a[Q.byPage[v][0]];const ps2=b.querySelector('#ps');ps2.textContent=`${sTitle(x[0])} - ${T('juz')} ${N(x[3])}`;ps2.style.fontFamily=EN()?'var(--ui)':''};
+    r.value=cur.p;upd(cur.p);r.oninput=()=>upd(+r.value);
+    b.querySelector('#pg').onclick=()=>{const v=+b.querySelector('#pi').value||+r.value;if(v>=1&&v<=604)goFromPanel(v);else toast(T('badPage'))}});
+}
+function pSearch(){
+  panel(T('search'),`<div class="searchbox"><input class="input" id="q" placeholder="${T('searchPh')}"><button class="btn primary" id="go">${T('go')}</button></div><div id="out"><p class="note">${T('searchHint')}</p></div>`,b=>{
+    const run=()=>{const raw=b.querySelector('#q').value.trim(),latin=/[a-z]/i.test(raw)&&Q.en;
+      const q=latin?raw.toLowerCase():norm(raw);if(q.length<2)return toast(T('min2'));
+      const res=[];
+      if(latin){if(!Q.enl)Q.enl=Q.en.map(t=>t.toLowerCase());Q.enl.forEach((t,i)=>{if(t.includes(q))res.push(i)})}
+      else{if(!Q.norm)Q.norm=Q.a.map(x=>norm(x[6]));Q.norm.forEach((t,i)=>{if(t.includes(q))res.push(i)})}
+      b.querySelector('#out').innerHTML=res.length?`<p class="note" style="padding:10px">${N(res.length)} ${T('results')}</p>`+res.slice(0,200).map(i=>{const x=Q.a[i];return`<button class="res" data-i="${i}"><div class="s">${esc(sTitle(x[0]))} - ${T('ayah')} ${N(x[1])} - ${T('page')} ${N(x[2])}</div><div class="t" dir="rtl">${esc(x[4])}</div>${latin||EN()&&Q.en?`<div class="en-t">${esc(enOf(i))}</div>`:''}</button>`}).join('')
+        :`<p class="note">${T('noRes')}</p>`};
+    b.querySelector('#go').onclick=run;b.querySelector('#q').onkeydown=e=>{if(e.key==='Enter')run()};
+    b.querySelector('#out').onclick=e=>{const r=e.target.closest('.res');if(r){const x=Q.a[+r.dataset.i];goFromPanel(x[2],x[0],x[1])}};
+    setTimeout(()=>b.querySelector('#q').focus(),300)});
+}
+function pMarks(){
+  panel(T('marksTitle'),'<div id="ml"></div>',b=>{
+    const draw=()=>{const B=bms(),F=favs();
+      b.querySelector('#ml').innerHTML=
+        `<p class="dsec" style="color:var(--gold);padding:0 0 4px">${T('marksSec')}</p>`+(B.length?B.map((m,i)=>`<div class="mrow"><button class="res" data-go="${m.p}:${m.s}:${m.a}"><div class="s">${m.k==='page'?T('pageMark'):T('ayahMark')}</div><div>${esc(sTitle(m.s))} - ${m.k==='page'?T('page')+' '+N(m.p):T('ayah')+' '+N(m.a)+' - '+T('page')+' '+N(m.p)}</div></button><button class="del" data-db="${i}" aria-label="${T('del')}">${ic('x')}</button></div>`).join(''):`<p class="note">${T('noMarks')}</p>`)+
+        `<p class="dsec" style="color:var(--gold);padding:16px 0 4px">${T('favSec')}</p>`+(F.length?F.map((f,i)=>`<div class="mrow"><button class="res" data-go="${f.p}:${f.s}:${f.a}"><div class="s">${esc(sTitle(f.s))} - ${T('ayah')} ${N(f.a)}</div><div class="t" dir="rtl">${esc(f.t)}</div></button><button class="del" data-df="${i}" aria-label="${T('del')}">${ic('x')}</button></div>`).join(''):`<p class="note">${T('noFav')}</p>`)};
+    draw();
+    b.onclick=e=>{const g=e.target.closest('[data-go]'),db=e.target.closest('[data-db]'),df=e.target.closest('[data-df]');
+      if(db){const B=bms(),m=B.splice(+db.dataset.db,1)[0];store.set('bms',B);if(m.k==='ayah'){const el=cur.leaf.querySelector(`[data-sa="${m.s}:${m.a}"]`);if(el&&!isMark(m.s,m.a))el.classList.remove('marked')}draw();refreshPool();toast(T('tMarkDeleted'))}
+      else if(df){const F=favs(),f=F.splice(+df.dataset.df,1)[0];store.set('favs',F);const el=cur.leaf.querySelector(`[data-sa="${f.s}:${f.a}"] .am`);if(el)el.classList.remove('fav');draw();refreshPool()}
+      else if(g){const[p,s,a]=g.dataset.go.split(':').map(Number);goFromPanel(p,s,a)}}});
+}
+function pBright(){
+  const v0=store.get('bright',null);
+  panel(T('bright'),`<p class="big" id="bv"></p><p class="bigsub" style="font-family:var(--ui);font-size:14px">${NA?T('brightApp'):T('brightWeb')}</p>
+    <input type="range" min="5" max="100" id="br" aria-label="${T('bright')}"><div class="actions"><button class="btn" id="ba">${T('brightAuto')}</button></div>`,b=>{
+    const r=b.querySelector('#br'),lab=v=>b.querySelector('#bv').textContent=v==null?T('auto'):N(v)+(EN()?'%':'٪');
+    r.value=v0==null?70:v0;lab(v0);
+    r.oninput=()=>{const v=+r.value;store.set('bright',v);applyBright(v);lab(v)};
+    b.querySelector('#ba').onclick=()=>{store.set('bright',null);applyBright(null);lab(null);toast(T('tBrightAuto'))}});
+}
+function applyBright(v){
+  if(NA&&NA.setBrightness){NA.setBrightness(v==null?-1:v/100);$('#dim').style.opacity=0}
+  else $('#dim').style.opacity=v==null?0:((100-v)/100*.75).toFixed(2);
+}
+let wake=null;
+async function applyKeepOn(on){
+  if(NA&&NA.keepOn){NA.keepOn(!!on);return}
+  try{if(on&&navigator.wakeLock)wake=await navigator.wakeLock.request('screen');else if(wake){wake.release();wake=null}}catch(e){}
+}
+function isDark(){const t=document.documentElement.dataset.theme;return t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches}
+function syncDark(){if(NA&&NA.setDark)NA.setDark(isDark())}
+function toggleNight(){const nx=isDark()?'light':'dark';document.documentElement.dataset.theme=nx;store.set('theme',nx);syncDark();drawMenu()}
+function saveBookmark(){const x=cur.d[0],b=bms().filter(m=>!(m.k==='page'&&m.p===cur.p));b.unshift({k:'page',p:cur.p,s:x.s,a:x.a,n:x.n,t:Date.now()});store.set('bms',b);toast(T('tSavedAt')+N(cur.p))}
+function goBookmark(){const b=bms()[0];if(!b)return toast(T('tNoBm'));closeThen(()=>goTo(b.p,b.k==='ayah'?b.s:0,b.a))}
+function shareApp(){
+  const txt=T('shareTxt')+'\n'+APP_LINK;
+  if(NA&&NA.share)NA.share(txt);
+  else if(navigator.share)navigator.share({text:txt}).catch(()=>{});
+  else navigator.clipboard.writeText(txt).then(()=>toast(T('tLinkCopied'))).catch(()=>{});
+}
+function applyLang(){
+  const h=document.documentElement;h.lang=LANG;h.dir=EN()?'ltr':'rtl';
+  document.title=T('appName');$('#dTitle').textContent=T('appName');$('#dSub').textContent=T('mainMenu');
+  $('#prev').textContent=T('prev');$('#next').textContent=T('next');
+  $('#menuBtn').setAttribute('aria-label',T('mainMenu'));$('#dclose').setAttribute('aria-label',T('close'));
+  if(cur)setCur(cur.leaf);if(Q)drawViewBtn();
+}
+function toggleLang(){LANG=EN()?'ar':'en';store.set('lang',LANG);applyLang();drawMenu()}
+
+/* ===== القائمة الجانبية ===== */
+I.globe='<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/>';
+const MENU=[
+  ['heart','fadl',pFadl],
+  ['book','tafsir',()=>pTafsir()],
+  ['list','index',pIndex],
+  ['pie','juzs',pJuz],
+  ['pages','pages',pPages],
+  ['search','search',pSearch],
+  ['bmAdd','saveBm',()=>{saveBookmark();closeOv()}],
+  ['bmGo','goBm',goBookmark],
+  ['bms','bms',pMarks],
+  ['dua','dua',pDua],
+  ['globe','lang',toggleLang,()=>EN()?'English':'العربية'],
+  ['sun','bright',pBright],
+  ['moon','night',toggleNight,()=>isDark()?T('on'):T('off')],
+  ['bulb','keepOn',()=>{const v=!store.get('keepon',false);store.set('keepon',v);applyKeepOn(v);toast(v?T('tKeepOn'):T('tKeepOff'));drawMenu()},()=>store.get('keepon',false)?T('on'):T('off')],
+  ['share','share',shareApp]];
+function drawMenu(){$('#dlist').innerHTML=MENU.map((m,i)=>`<button class="ditem" data-m="${i}">${ic(m[0])}<span>${T(m[1])}</span>${m[3]?`<span class="st">${m[3]()}</span>`:''}</button>`).join('')}
+$('#dlist').onclick=e=>{const b=e.target.closest('.ditem');if(b)MENU[+b.dataset.m][2]()};
+$('#menuBtn').onclick=()=>{drawMenu();openOv();$('#scrim').classList.add('on');$('#drawer').classList.add('open')};
+
+/* ===== التشغيل ===== */
+(async function start(){
+  const th=store.get('theme',null);if(th)document.documentElement.dataset.theme=th;
+  applyLang();
+  applyBright(store.get('bright',null));applyKeepOn(store.get('keepon',false));syncDark();
+  try{await loadData()}catch(e){stage.innerHTML=`<p class="note">${T('dataErr')}</p>`;return}
+  drawViewBtn();
+  const h=location.hash.slice(1).split('/');
+  if(h[0]==='p'&&+h[1]){show(+h[1]);highlight(+h[2],+h[3])}
+  else if(h[0]==='a'&&+h[1]){const s=+h[1],a=+h[2]||1;show(pageOf(s,a));highlight(s,a)}
+  else show((store.get('last',null)||{p:1}).p);
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(cur&&!busy){delete FS.p[(cur.leaf._tr?'t':'')+cur.p];fit(cur.leaf);refreshPool()}});
+})();
+
+</script>
+</body>
+</html>
