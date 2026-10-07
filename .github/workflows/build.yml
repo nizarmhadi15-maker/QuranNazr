@@ -81,8 +81,27 @@ jobs:
                   applicationId = "com.nizar.qurannazr"
                   minSdk = 26
                   targetSdk = 34
-                  versionCode = 5
-                  versionName = "5.0"
+                  // رقم الإصدار يرتفع تلقائياً مع كل بناء
+                  versionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt() + 100
+                  versionName = "1." + (System.getenv("GITHUB_RUN_NUMBER") ?: "0")
+              }
+              lint {
+                  checkReleaseBuilds = false
+                  abortOnError = false
+              }
+              signingConfigs {
+                  create("upload") {
+                      storeFile = file("upload.jks")
+                      storePassword = System.getenv("KEYSTORE_PASSWORD")
+                      keyAlias = System.getenv("KEY_ALIAS")
+                      keyPassword = System.getenv("KEYSTORE_PASSWORD")
+                  }
+              }
+              buildTypes {
+                  release {
+                      isMinifyEnabled = false
+                      if (System.getenv("KEYSTORE_PASSWORD") != null) signingConfig = signingConfigs.getByName("upload")
+                  }
               }
               compileOptions {
                   sourceCompatibility = JavaVersion.VERSION_17
@@ -293,14 +312,34 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Build APK
+      - name: Build APK + AAB
         working-directory: android
-        run: gradle assembleDebug
-      - run: cp android/app/build/outputs/apk/debug/app-debug.apk quran-nazr.apk
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          set -e
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ]; then
+            echo "$KEYSTORE_BASE64" | tr -d ' \r\n' | base64 -d > app/upload.jks
+            echo "Signing with the permanent upload key"
+            gradle assembleRelease bundleRelease
+            cp app/build/outputs/apk/release/app-release.apk ../quran-nazr.apk
+            cp app/build/outputs/bundle/release/app-release.aab ../quran-nazr.aab
+            rm -f app/upload.jks
+          else
+            echo "::warning::Signing secrets not found - building a temporary debug APK"
+            unset KEYSTORE_PASSWORD
+            gradle assembleDebug
+            cp app/build/outputs/apk/debug/app-debug.apk ../quran-nazr.apk
+          fi
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: القرآن الكريم نزر
           body: آخر نسخة من التطبيق
-          files: quran-nazr.apk
+          files: |
+            quran-nazr.apk
+            quran-nazr.aab
+          fail_on_unmatched_files: false
           make_latest: true
